@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import type { View } from '../App';
 import { 
@@ -26,8 +25,8 @@ const NavLink: React.FC<{
             onClick={() => setCurrentView(view)}
             className={`w-full flex items-center ${isSubItem ? 'pl-12 pr-4' : 'px-4'} py-3 my-1 text-left rounded-lg transition-colors duration-200 ease-in-out ${
                 currentView === view
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                    ? 'bg-red-600 text-white shadow-md'
+                    : 'text-slate-600 hover:bg-red-50 hover:text-red-600'
             }`}
         >
             {Icon && <Icon className="w-5 h-5 mr-4 flex-shrink-0" />}
@@ -49,7 +48,7 @@ const NavGroup: React.FC<{
         <li>
             <button
                 onClick={() => setOpenMenu(isOpen ? null : id)}
-                className="w-full flex items-center justify-between px-4 py-3 my-1 text-left text-slate-300 hover:bg-slate-700 hover:text-white rounded-lg transition-colors duration-200"
+                className="w-full flex items-center justify-between px-4 py-3 my-1 text-left text-slate-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors duration-200"
             >
                 <div className="flex items-center">
                     <Icon className="w-5 h-5 mr-4" />
@@ -66,17 +65,17 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView, onLogout
     const [openMenu, setOpenMenu] = useState<string | null>('business');
 
     return (
-        <aside className="w-64 bg-slate-800 text-slate-100 flex flex-col hidden md:flex">
-            <div className="flex items-center justify-center h-20 border-b border-slate-700">
-                <LogoIcon className="w-8 h-8 text-indigo-400" />
-                <h1 className="text-xl font-bold ml-3">Admin Panel</h1>
+        <aside className="w-64 bg-white text-slate-700 flex flex-col hidden md:flex border-r border-slate-200">
+            <div className="flex items-center justify-center h-20 border-b border-slate-200">
+                <LogoIcon className="w-8 h-8 text-red-500" />
+                <h1 className="text-xl font-bold ml-3 text-slate-800">Admin Panel</h1>
             </div>
             <nav className="flex-1 px-4 py-6 overflow-y-auto">
                 <ul>
                     <NavLink Icon={DashboardIcon} view="dashboard" label="Dasbor" {...{ currentView, setCurrentView }} />
 
                     <NavGroup label="Manajemen Koperasi" Icon={CooperativeIcon} id="cooperative" {...{ openMenu, setOpenMenu }}>
-                        <NavLink Icon={() => <span className="w-5 mr-4" />} view="cooperative-management" label="Manajemen Anggota" isSubItem {...{ currentView, setCurrentView }} />
+                        <NavLink Icon={() => <span className="w-5 mr-4" />} view="cooperative-management" label="Anggota" isSubItem {...{ currentView, setCurrentView }} />
                         <NavLink Icon={() => <span className="w-5 mr-4" />} view="cooperative-others" label="Lainnya" isSubItem {...{ currentView, setCurrentView }} />
                     </NavGroup>
 
@@ -87,6 +86,8 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView, onLogout
                         <NavLink Icon={() => <span className="w-5 mr-4" />} view="product-categories" label="Kategori Produk" isSubItem {...{ currentView, setCurrentView }} />
                         <NavLink Icon={() => <span className="w-5 mr-4" />} view="transactions" label="Transaksi" isSubItem {...{ currentView, setCurrentView }} />
                         <NavLink Icon={() => <span className="w-5 mr-4" />} view="employees" label="Karyawan" isSubItem {...{ currentView, setCurrentView }} />
+                        <NavLink Icon={() => <span className="w-5 mr-4" />} view="customers" label="Customer" isSubItem {...{ currentView, setCurrentView }} />
+                        <NavLink Icon={() => <span className="w-5 mr-4" />} view="customer-categories" label="Kategori Customer" isSubItem {...{ currentView, setCurrentView }} />
                         <NavLink Icon={() => <span className="w-5 mr-4" />} view="operational-costs" label="Biaya Operasional" isSubItem {...{ currentView, setCurrentView }} />
                         <NavLink Icon={() => <span className="w-5 mr-4" />} view="operational-cost-categories" label="Kategori Biaya" isSubItem {...{ currentView, setCurrentView }} />
                     </NavGroup>
@@ -101,10 +102,10 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView, onLogout
                     </NavGroup>
                 </ul>
             </nav>
-            <div className="p-4 border-t border-slate-700">
+            <div className="p-4 border-t border-slate-200">
                 <button
                     onClick={onLogout}
-                    className="w-full flex items-center px-4 py-3 text-left text-slate-300 hover:bg-red-500 hover:text-white rounded-lg transition-colors duration-200"
+                    className="w-full flex items-center px-4 py-3 text-left text-slate-600 hover:bg-red-50 hover:text-red-600 rounded-lg transition-colors duration-200"
                 >
                     <LogoutIcon className="w-5 h-5 mr-4" />
                     <span className="font-medium text-sm">Logout</span>

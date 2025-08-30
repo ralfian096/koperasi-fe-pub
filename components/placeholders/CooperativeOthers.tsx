@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 const CooperativeOthers: React.FC = () => {
@@ -10,9 +9,9 @@ const CooperativeOthers: React.FC = () => {
                 Anda akan dapat menambah, mengubah, dan melihat data anggota, serta mencatat dan melacak
                 simpanan (pokok, wajib, sukarela) dan pinjaman anggota.
             </p>
-            <div className="mt-6 p-4 border-l-4 border-indigo-500 bg-indigo-50">
-                <p className="font-semibold text-indigo-800">Fitur yang Direncanakan:</p>
-                <ul className="list-disc list-inside text-indigo-700 mt-2">
+            <div className="mt-6 p-4 border-l-4 border-red-500 bg-red-50">
+                <p className="font-semibold text-red-800">Fitur yang Direncanakan:</p>
+                <ul className="list-disc list-inside text-red-700 mt-2">
                     <li>Manajemen Simpanan Anggota (Pokok, Wajib, Sukarela)</li>
                     <li>Manajemen Pinjaman Anggota</li>
                     <li>Laporan Keuangan Koperasi</li>

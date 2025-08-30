@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { Product, Transaction, TransactionItem, BusinessUnit, Outlet, Member, Employee, OperationalCost, User, ProductCategory, OperationalCostCategory, Variant, RentalResource, ResourceAvailability } from '../types';
+import { Product, Transaction, TransactionItem, BusinessUnit, Outlet, Member, Employee, OperationalCost, User, ProductCategory, OperationalCostCategory, Variant, RentalResource, ResourceAvailability, Customer, CustomerCategory } from '../types';
 
 // Mock Data Generators
 const generateInitialBusinessUnits = (): BusinessUnit[] => [
@@ -30,19 +30,19 @@ const generateInitialProducts = (): Product[] => [
   { id: 'prod-2', name: 'Americano', description: 'Espresso shot dengan tambahan air panas.', categoryId: 'cat-1', type: 'barang', imageUrl: 'https://picsum.photos/seed/americano/400', outletId: 'outlet-1' },
   { id: 'prod-3', name: 'Thai Tea', description: 'Teh susu Thailand otentik.', categoryId: 'cat-3', type: 'barang', imageUrl: 'https://picsum.photos/seed/thaitea/400', outletId: 'outlet-2' },
   // Sewa Products (price is on product)
-  { id: 'prod-4', name: 'Sewa Meja Biliar', description: 'Sewa meja biliar standar internasional per jam.', categoryId: 'cat-4', price: { general: 50000, member: 45000 }, type: 'sewa', imageUrl: 'https://picsum.photos/seed/billiard/400', outletId: 'outlet-3' },
-  { id: 'prod-5', name: 'Tenda Roder', description: 'Sewa tenda roder untuk acara besar, harga per hari.', categoryId: 'cat-6', price: { general: 1500000, member: 1350000 }, type: 'sewa', imageUrl: 'https://picsum.photos/seed/tent/400', outletId: 'outlet-4' },
+  { id: 'prod-4', name: 'Sewa Meja Biliar', description: 'Sewa meja biliar standar internasional per jam.', categoryId: 'cat-4', generalPrice: 50000, categoryPrices: [{ categoryId: 'cust-cat-2', price: 45000 }], type: 'sewa', imageUrl: 'https://picsum.photos/seed/billiard/400', outletId: 'outlet-3' },
+  { id: 'prod-5', name: 'Tenda Roder', description: 'Sewa tenda roder untuk acara besar, harga per hari.', categoryId: 'cat-6', generalPrice: 1500000, categoryPrices: [{ categoryId: 'cust-cat-3', price: 1350000 }], type: 'sewa', imageUrl: 'https://picsum.photos/seed/tent/400', outletId: 'outlet-4' },
 ];
 
 const generateInitialVariants = (): Variant[] => [
     // Variants for Latte (prod-1)
-    { id: 'var-1', productId: 'prod-1', name: 'Panas', sku: 'LAT-HOT', price: { general: 35000, member: 32000 }, stock: 50 },
-    { id: 'var-2', productId: 'prod-1', name: 'Dingin', sku: 'LAT-ICE', price: { general: 38000, member: 35000 }, stock: 80 },
+    { id: 'var-1', productId: 'prod-1', name: 'Panas', sku: 'LAT-HOT', generalPrice: 35000, categoryPrices: [{ categoryId: 'cust-cat-2', price: 32000 }], stock: 50 },
+    { id: 'var-2', productId: 'prod-1', name: 'Dingin', sku: 'LAT-ICE', generalPrice: 38000, categoryPrices: [{ categoryId: 'cust-cat-2', price: 35000 }], stock: 80 },
     // Variants for Americano (prod-2)
-    { id: 'var-3', productId: 'prod-2', name: 'Panas', sku: 'AME-HOT', price: { general: 30000, member: 28000 }, stock: 60 },
+    { id: 'var-3', productId: 'prod-2', name: 'Panas', sku: 'AME-HOT', generalPrice: 30000, categoryPrices: [], stock: 60 },
     // Variants for Thai Tea (prod-3)
-    { id: 'var-5', productId: 'prod-3', name: 'Original', sku: 'THA-ORI', price: { general: 25000, member: 22000 }, stock: 120 },
-    { id: 'var-6', productId: 'prod-3', name: 'Dengan Boba', sku: 'THA-BOBA', price: { general: 28000, member: 25000 }, stock: 5 }, // Low stock example
+    { id: 'var-5', productId: 'prod-3', name: 'Original', sku: 'THA-ORI', generalPrice: 25000, categoryPrices: [{ categoryId: 'cust-cat-3', price: 22000 }], stock: 120 },
+    { id: 'var-6', productId: 'prod-3', name: 'Dengan Boba', sku: 'THA-BOBA', generalPrice: 28000, categoryPrices: [{ categoryId: 'cust-cat-3', price: 25000 }], stock: 5 }, // Low stock example
 ];
 
 const generateInitialRentalResources = (): RentalResource[] => [
@@ -67,7 +67,7 @@ const generateInitialResourceAvailabilities = (): ResourceAvailability[] => [
 ];
 
 
-const generateInitialTransactions = (products: Product[], variants: Variant[], outlets: Outlet[]): Transaction[] => {
+const generateInitialTransactions = (products: Product[], variants: Variant[], outlets: Outlet[], customers: Customer[]): Transaction[] => {
     const transactions: Transaction[] = [];
     if (products.length === 0 || outlets.length === 0) return [];
     const paymentMethods: Transaction['paymentMethod'][] = ['Tunai', 'Kartu Kredit', 'QRIS'];
@@ -77,6 +77,10 @@ const generateInitialTransactions = (products: Product[], variants: Variant[], o
         const outlet = outlets[Math.floor(Math.random() * outlets.length)];
         const productsInOutlet = barangProducts.filter(p => p.outletId === outlet.id);
         if (productsInOutlet.length === 0) continue;
+
+        const hasCustomer = Math.random() > 0.5 && customers.length > 0;
+        const customer = hasCustomer ? customers[Math.floor(Math.random() * customers.length)] : null;
+        const customerId = customer?.id;
 
         const numItems = Math.floor(Math.random() * 3) + 1;
         const items: TransactionItem[] = [];
@@ -89,9 +93,14 @@ const generateInitialTransactions = (products: Product[], variants: Variant[], o
 
             const variant = productVariants[Math.floor(Math.random() * productVariants.length)];
             const quantity = Math.floor(Math.random() * 2) + 1;
-            const isMember = Math.random() > 0.5;
-            const priceType = isMember ? 'member' : 'general';
-            const priceAtTransaction = variant.price[priceType];
+            
+            let priceAtTransaction = variant.generalPrice;
+            if (customer) {
+                const categoryPrice = variant.categoryPrices.find(p => p.categoryId === customer.categoryId);
+                if (categoryPrice) {
+                    priceAtTransaction = categoryPrice.price;
+                }
+            }
             
             items.push({
                 productId: product.id,
@@ -99,7 +108,6 @@ const generateInitialTransactions = (products: Product[], variants: Variant[], o
                 variantName: variant.name,
                 quantity,
                 priceAtTransaction,
-                priceType,
             });
             total += priceAtTransaction * quantity;
         }
@@ -114,6 +122,7 @@ const generateInitialTransactions = (products: Product[], variants: Variant[], o
             outletId: outlet.id,
             status: Math.random() > 0.1 ? 'Selesai' : 'Refund',
             paymentMethod: paymentMethods[Math.floor(Math.random() * paymentMethods.length)],
+            customerId: customerId,
         });
     }
     return transactions.sort((a, b) => b.date.getTime() - a.date.getTime());
@@ -146,6 +155,19 @@ const generateInitialUsers = (): User[] => [
     { id: 'user-1', username: 'admin', password: 'admin', role: 'Admin' },
     { id: 'user-2', username: 'manajer.kk', password: 'password', role: 'Manajer' },
     { id: 'user-3', username: 'staf.rb', password: 'password', role: 'Staf' },
+];
+
+const generateInitialCustomerCategories = (): CustomerCategory[] => [
+    { id: 'cust-cat-1', name: 'Umum' },
+    { id: 'cust-cat-2', name: 'VIP' },
+    { id: 'cust-cat-3', name: 'Reseller' },
+];
+
+const generateInitialCustomers = (businessUnits: BusinessUnit[], categories: CustomerCategory[]): Customer[] => [
+    { id: 'cust-1', name: 'Rina Marlina', phone: '081234567890', categoryId: 'cust-cat-1', businessUnitId: 'unit-1' },
+    { id: 'cust-2', name: 'Joko Widodo', phone: '081298765432', categoryId: 'cust-cat-2', businessUnitId: 'unit-1' },
+    { id: 'cust-3', name: 'Siti Aminah', phone: '085611223344', categoryId: 'cust-cat-1', businessUnitId: 'unit-2' },
+    { id: 'cust-4', name: 'Bambang Pamungkas', phone: '087755667788', categoryId: 'cust-cat-3', businessUnitId: 'unit-2' },
 ];
 
 
@@ -195,7 +217,6 @@ const usePosData = () => {
     const [rentalResources, setRentalResources] = useLocalStorageState('pos-rentalResources', generateInitialRentalResources);
     const [resourceAvailabilities, setResourceAvailabilities] = useLocalStorageState('pos-resourceAvailabilities', generateInitialResourceAvailabilities);
     
-    const [transactions, setTransactions] = useLocalStorageState('pos-transactions', () => generateInitialTransactions(products, variants, outlets));
     
     // Existing states
     const [members, setMembers] = useLocalStorageState('pos-members', generateInitialMembers);
@@ -203,6 +224,12 @@ const usePosData = () => {
     const [operationalCostCategories, setOperationalCostCategories] = useLocalStorageState('pos-operationalCostCategories', generateInitialOperationalCostCategories);
     const [operationalCosts, setOperationalCosts] = useLocalStorageState('pos-operationalCosts', () => generateInitialOperationalCosts(outlets, operationalCostCategories));
     const [users, setUsers] = useLocalStorageState('pos-users', generateInitialUsers);
+
+    // New states for customers
+    const [customerCategories, setCustomerCategories] = useLocalStorageState('pos-customerCategories', generateInitialCustomerCategories);
+    const [customers, setCustomers] = useLocalStorageState('pos-customers', () => generateInitialCustomers(businessUnits, customerCategories));
+
+    const [transactions, setTransactions] = useLocalStorageState('pos-transactions', () => generateInitialTransactions(products, variants, outlets, customers));
 
     // Business Unit CRUD
     const addBusinessUnit = (unit: Omit<BusinessUnit, 'id'>) => {
@@ -350,16 +377,43 @@ const usePosData = () => {
         setMembers(prev => prev.filter(m => m.id !== memberId));
     };
 
+    // Customer Category CRUD
+    const addCustomerCategory = (category: Omit<CustomerCategory, 'id'>) => {
+        const newCategory: CustomerCategory = { ...category, id: `cust-cat-${Date.now()}` };
+        setCustomerCategories(prev => [...prev, newCategory]);
+    };
+    const updateCustomerCategory = (updatedCategory: CustomerCategory) => {
+        setCustomerCategories(prev => prev.map(c => c.id === updatedCategory.id ? updatedCategory : c));
+    };
+    const deleteCustomerCategory = (categoryId: string) => {
+        setCustomerCategories(prev => prev.filter(c => c.id !== categoryId));
+    };
+
+    // Customer CRUD
+    const addCustomer = (customer: Omit<Customer, 'id'>) => {
+        const newCustomer: Customer = { ...customer, id: `cust-${Date.now()}` };
+        setCustomers(prev => [...prev, newCustomer]);
+    };
+    const updateCustomer = (updatedCustomer: Customer) => {
+        setCustomers(prev => prev.map(c => c.id === updatedCustomer.id ? updatedCustomer : c));
+    };
+    const deleteCustomer = (customerId: string) => {
+        setCustomers(prev => prev.filter(c => c.id !== customerId));
+    };
+
     return { 
         businessUnits, outlets, products, transactions, members, employees, operationalCostCategories, operationalCosts, users, categories, 
         variants, rentalResources, resourceAvailabilities,
+        customerCategories, customers,
         addBusinessUnit, updateBusinessUnit, deleteBusinessUnit,
         addOutlet, updateOutlet, deleteOutlet,
         addProduct, updateProduct, deleteProduct, 
         addCategory, updateCategory, deleteCategory,
         addOperationalCost, updateOperationalCost, deleteOperationalCost,
         addOperationalCostCategory, updateOperationalCostCategory, deleteOperationalCostCategory,
-        addMember, updateMember, deleteMember
+        addMember, updateMember, deleteMember,
+        addCustomerCategory, updateCustomerCategory, deleteCustomerCategory,
+        addCustomer, updateCustomer, deleteCustomer
     };
 };
 

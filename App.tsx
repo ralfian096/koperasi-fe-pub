@@ -17,6 +17,8 @@ import BusinessUnitManagement from './components/BusinessUnitManagement';
 import OutletManagement from './components/OutletManagement';
 import LoginPage from './components/LoginPage';
 import { User } from './types';
+import CustomerManagement from './components/CustomerManagement';
+import CustomerCategoryManagement from './components/CustomerCategoryManagement';
 
 export type View = 
   | 'dashboard' 
@@ -32,7 +34,9 @@ export type View =
   | 'sales-turnover-report'
   | 'user-management'
   | 'business-units'
-  | 'outlets';
+  | 'outlets'
+  | 'customers'
+  | 'customer-categories';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('dashboard');
@@ -80,6 +84,10 @@ const App: React.FC = () => {
         return <BusinessUnitManagement />;
       case 'outlets':
         return <OutletManagement />;
+      case 'customers':
+        return <CustomerManagement />;
+      case 'customer-categories':
+        return <CustomerCategoryManagement />;
       default:
         return <Dashboard />;
     }

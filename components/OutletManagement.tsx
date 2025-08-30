@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo } from 'react';
 import usePosData from '../hooks/usePosData';
 import { Outlet } from '../types';
@@ -51,11 +50,11 @@ const OutletModal: React.FC<{
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-slate-600">Nama Outlet</label>
-            <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"/>
+            <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"/>
           </div>
           <div>
             <label htmlFor="businessUnitId" className="block text-sm font-medium text-slate-600">Unit Usaha Induk</label>
-            <select name="businessUnitId" id="businessUnitId" value={formData.businessUnitId} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-slate-100">
+            <select name="businessUnitId" id="businessUnitId" value={formData.businessUnitId} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 disabled:bg-slate-100">
                 {businessUnits.length > 0 ? businessUnits.map(unit => (
                     <option key={unit.id} value={unit.id}>{unit.name}</option>
                 )) : (
@@ -65,7 +64,7 @@ const OutletModal: React.FC<{
           </div>
           <div className="mt-8 flex justify-end space-x-3">
             <button type="button" onClick={onClose} className="px-4 py-2 bg-slate-200 text-slate-800 rounded-md hover:bg-slate-300">Batal</button>
-            <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700" disabled={businessUnits.length === 0}>Simpan</button>
+            <button type="submit" className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700" disabled={businessUnits.length === 0}>Simpan</button>
           </div>
         </form>
       </div>
@@ -117,7 +116,7 @@ const OutletManagement: React.FC = () => {
             <div className="flex justify-end">
                 <button 
                     onClick={() => handleOpenModal()} 
-                    className={`flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 transition ${businessUnits.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`flex items-center px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition ${businessUnits.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
                     disabled={businessUnits.length === 0}
                 >
                     <PlusIcon className="w-5 h-5 mr-2"/>
@@ -141,7 +140,7 @@ const OutletManagement: React.FC = () => {
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{outlet.name}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{businessUnitMap[outlet.businessUnitId] || 'N/A'}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button onClick={() => handleOpenModal(outlet)} className="text-indigo-600 hover:text-indigo-900 mr-4"><EditIcon className="w-5 h-5"/></button>
+                                        <button onClick={() => handleOpenModal(outlet)} className="text-red-600 hover:text-red-900 mr-4"><EditIcon className="w-5 h-5"/></button>
                                         <button onClick={() => handleDeleteOutlet(outlet.id)} className="text-red-600 hover:text-red-900"><TrashIcon className="w-5 h-5"/></button>
                                     </td>
                                 </tr>

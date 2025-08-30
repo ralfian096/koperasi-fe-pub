@@ -17,16 +17,18 @@ export interface ProductCategory {
 }
 
 // New Product-related interfaces for advanced features
+export interface CategoryPrice {
+  categoryId: string;
+  price: number;
+}
 
 export interface Variant {
   id: string;
   productId: string;
   name: string;
   sku: string;
-  price: {
-    general: number;
-    member: number;
-  };
+  generalPrice: number;
+  categoryPrices: CategoryPrice[];
   stock: number;
 }
 
@@ -50,11 +52,10 @@ export interface Product {
   name: string;
   description: string;
   categoryId: string;
-  // Price is now optional at the top level. For 'sewa' it's required. For 'barang' it's on the variant.
-  price?: {
-    general: number;
-    member: number;
-  };
+  // Price is now based on general and customer categories.
+  // Optional at top level for 'barang', required for 'sewa'.
+  generalPrice?: number;
+  categoryPrices?: CategoryPrice[];
   type: 'barang' | 'sewa';
   imageUrl: string;
   outletId: string;
@@ -66,7 +67,6 @@ export interface TransactionItem {
   variantName?: string; // Optional: for barang type
   quantity: number;
   priceAtTransaction: number;
-  priceType: 'general' | 'member';
 }
 
 export interface Transaction {
@@ -77,6 +77,7 @@ export interface Transaction {
   outletId: string;
   status: 'Selesai' | 'Refund';
   paymentMethod: 'Tunai' | 'Kartu Kredit' | 'QRIS';
+  customerId?: string;
 }
 
 // Existing types for other modules
@@ -115,4 +116,17 @@ export interface User {
     // FIX: Corrected a typo in the password property definition from `password; string;` to `password: string;`.
     password: string;
     role: 'Admin' | 'Manajer' | 'Staf';
+}
+
+export interface CustomerCategory {
+  id: string;
+  name: string;
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  phone: string;
+  categoryId: string;
+  businessUnitId: string;
 }

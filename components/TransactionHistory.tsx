@@ -1,9 +1,8 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import usePosData from '../hooks/usePosData';
 import { Transaction } from '../types';
 
-const TransactionRow: React.FC<{ transaction: Transaction }> = ({ transaction }) => {
+const TransactionRow: React.FC<{ transaction: Transaction; customerName: string; }> = ({ transaction, customerName }) => {
     // Cari nama outlet berdasarkan outletId
     const { outlets } = usePosData();
     const outletName = outlets.find(o => o.id === transaction.outletId)?.name || 'N/A';
@@ -13,10 +12,11 @@ const TransactionRow: React.FC<{ transaction: Transaction }> = ({ transaction })
             <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{transaction.id.slice(-8)}</td>
             <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{transaction.date.toLocaleString('id-ID')}</td>
             <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{outletName}</td>
+             <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{customerName}</td>
             <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                 <ul className="list-disc list-inside">
-                    {transaction.items.map(item => (
-                        <li key={item.productId}>{item.productName} (x{item.quantity})</li>
+                    {transaction.items.map((item, index) => (
+                        <li key={`${item.productId}-${index}`}>{item.productName} (x{item.quantity})</li>
                     ))}
                 </ul>
             </td>
@@ -34,7 +34,7 @@ const TransactionRow: React.FC<{ transaction: Transaction }> = ({ transaction })
 };
 
 const TransactionHistory: React.FC = () => {
-    const { businessUnits, outlets, transactions } = usePosData();
+    const { businessUnits, outlets, transactions, customers } = usePosData();
     
     const [selectedUnit, setSelectedUnit] = useState<string>(businessUnits[0]?.id || '');
     const [selectedOutlet, setSelectedOutlet] = useState<string>('');
@@ -42,6 +42,13 @@ const TransactionHistory: React.FC = () => {
     const [endDate, setEndDate] = useState<string>('');
     const [statusFilter, setStatusFilter] = useState<'all' | 'Selesai' | 'Refund'>('all');
     const [paymentMethodFilter, setPaymentMethodFilter] = useState<'all' | 'Tunai' | 'Kartu Kredit' | 'QRIS'>('all');
+
+    const customerMap = useMemo(() => 
+        customers.reduce((acc, customer) => {
+            acc[customer.id] = customer.name;
+            return acc;
+        }, {} as Record<string, string>),
+    [customers]);
 
     useEffect(() => {
         if (endDate && startDate > endDate) {
@@ -131,7 +138,7 @@ const TransactionHistory: React.FC = () => {
                         <select
                           value={selectedUnit}
                           onChange={(e) => setSelectedUnit(e.target.value)}
-                          className="w-full sm:w-auto px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                          className="w-full sm:w-auto px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
                         >
                           {businessUnits.map(unit => (
                             <option key={unit.id} value={unit.id}>{unit.name}</option>
@@ -140,7 +147,7 @@ const TransactionHistory: React.FC = () => {
                         <select
                            value={selectedOutlet}
                            onChange={(e) => setSelectedOutlet(e.target.value)}
-                           className="w-full sm:w-auto px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                           className="w-full sm:w-auto px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
                            disabled={availableOutlets.length === 0}
                         >
                            {availableOutlets.map(outlet => (
@@ -160,7 +167,7 @@ const TransactionHistory: React.FC = () => {
                                     setEndDate(newStartDate);
                                 }
                             }}
-                            className="w-full sm:w-auto px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                            className="w-full sm:w-auto px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
                         />
                         <span className="text-slate-500 hidden sm:inline">-</span>
                          <input
@@ -169,12 +176,12 @@ const TransactionHistory: React.FC = () => {
                             min={startDate}
                             disabled={!startDate}
                             onChange={(e) => setEndDate(e.target.value)}
-                            className="w-full sm:w-auto px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-slate-100"
+                            className="w-full sm:w-auto px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 disabled:bg-slate-100"
                         />
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value as 'all' | 'Selesai' | 'Refund')}
-                            className="w-full sm:w-auto px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                            className="w-full sm:w-auto px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
                         >
                             <option value="all">Semua Status</option>
                             <option value="Selesai">Selesai</option>
@@ -183,7 +190,7 @@ const TransactionHistory: React.FC = () => {
                          <select
                             value={paymentMethodFilter}
                             onChange={(e) => setPaymentMethodFilter(e.target.value as any)}
-                            className="w-full sm:w-auto px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                            className="w-full sm:w-auto px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
                         >
                             <option value="all">Semua Metode</option>
                             <option value="Tunai">Tunai</option>
@@ -226,6 +233,7 @@ const TransactionHistory: React.FC = () => {
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">ID Transaksi</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Tanggal</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Outlet</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Customer</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Item</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Metode Pembayaran</th>
@@ -234,10 +242,14 @@ const TransactionHistory: React.FC = () => {
                         </thead>
                         <tbody className="bg-white divide-y divide-slate-200">
                             {filteredTransactions.length > 0 ? filteredTransactions.map((transaction) => (
-                                <TransactionRow key={transaction.id} transaction={transaction} />
+                                <TransactionRow 
+                                    key={transaction.id} 
+                                    transaction={transaction} 
+                                    customerName={transaction.customerId ? customerMap[transaction.customerId] || 'N/A' : '-'}
+                                />
                             )) : (
                                 <tr>
-                                    <td colSpan={7} className="text-center py-10 text-slate-500">
+                                    <td colSpan={8} className="text-center py-10 text-slate-500">
                                          {selectedOutlet ? 'Tidak ada transaksi untuk filter ini.' : 'Silakan pilih unit usaha dan outlet.'}
                                     </td>
                                 </tr>

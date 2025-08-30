@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import usePosData from '../../hooks/usePosData';
 import { OperationalCost } from '../../types';
@@ -69,25 +68,25 @@ const CostModal: React.FC<{
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-slate-600">Deskripsi</label>
-            <input type="text" name="description" id="description" value={formData.description} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"/>
+            <input type="text" name="description" id="description" value={formData.description} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"/>
           </div>
           <div>
             <label htmlFor="categoryId" className="block text-sm font-medium text-slate-600">Kategori Biaya</label>
-            <select name="categoryId" id="categoryId" value={formData.categoryId} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+            <select name="categoryId" id="categoryId" value={formData.categoryId} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500">
                 {operationalCostCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           <div>
             <label htmlFor="amount" className="block text-sm font-medium text-slate-600">Jumlah (Rp)</label>
-            <input type="number" name="amount" id="amount" value={formData.amount} onChange={handleChange} required min="0" className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"/>
+            <input type="number" name="amount" id="amount" value={formData.amount} onChange={handleChange} required min="0" className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"/>
           </div>
           <div>
             <label htmlFor="date" className="block text-sm font-medium text-slate-600">Tanggal</label>
-            <input type="date" name="date" id="date" value={formData.date} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"/>
+            <input type="date" name="date" id="date" value={formData.date} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"/>
           </div>
           <div className="mt-8 flex justify-end space-x-3">
             <button type="button" onClick={onClose} className="px-4 py-2 bg-slate-200 text-slate-800 rounded-md hover:bg-slate-300">Batal</button>
-            <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Simpan</button>
+            <button type="submit" className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Simpan</button>
           </div>
         </form>
       </div>
@@ -168,17 +167,17 @@ const OperationalCosts: React.FC = () => {
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                  <h2 className="text-3xl font-bold text-slate-800">Biaya Operasional</h2>
                  <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto flex-wrap">
-                    <select value={selectedUnit} onChange={(e) => setSelectedUnit(e.target.value)} className="w-full sm:w-auto px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    <select value={selectedUnit} onChange={(e) => setSelectedUnit(e.target.value)} className="w-full sm:w-auto px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500">
                       {businessUnits.map(unit => <option key={unit.id} value={unit.id}>{unit.name}</option>)}
                     </select>
-                    <select value={selectedOutlet} onChange={(e) => setSelectedOutlet(e.target.value)} className="w-full sm:w-auto px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" disabled={availableOutlets.length === 0}>
+                    <select value={selectedOutlet} onChange={(e) => setSelectedOutlet(e.target.value)} className="w-full sm:w-auto px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500" disabled={availableOutlets.length === 0}>
                        {availableOutlets.map(outlet => <option key={outlet.id} value={outlet.id}>{outlet.name}</option>)}
                     </select>
-                    <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} className="w-full sm:w-auto px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    <select value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} className="w-full sm:w-auto px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500">
                         <option value="all">Semua Bulan</option>
                         {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                     </select>
-                    <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="w-full sm:w-auto px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                    <select value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)} className="w-full sm:w-auto px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500">
                         {years.map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
                  </div>
@@ -187,7 +186,7 @@ const OperationalCosts: React.FC = () => {
             <div className="flex justify-end">
                 <button 
                     onClick={() => handleOpenModal()} 
-                    className={`flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 transition ${!selectedOutlet ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    className={`flex items-center px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition ${!selectedOutlet ? 'opacity-50 cursor-not-allowed' : ''}`}
                     disabled={!selectedOutlet}
                 >
                     <PlusIcon className="w-5 h-5 mr-2"/>
@@ -215,7 +214,7 @@ const OperationalCosts: React.FC = () => {
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{cost.description}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-800">Rp{cost.amount.toLocaleString('id-ID')}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button onClick={() => handleOpenModal(cost)} className="text-indigo-600 hover:text-indigo-900 mr-4"><EditIcon className="w-5 h-5"/></button>
+                                        <button onClick={() => handleOpenModal(cost)} className="text-red-600 hover:text-red-900 mr-4"><EditIcon className="w-5 h-5"/></button>
                                         <button onClick={() => deleteOperationalCost(cost.id)} className="text-red-600 hover:text-red-900"><TrashIcon className="w-5 h-5"/></button>
                                     </td>
                                 </tr>

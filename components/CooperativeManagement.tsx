@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import usePosData from '../hooks/usePosData';
 import { Member } from '../types';
@@ -67,26 +66,26 @@ const MemberModal: React.FC<{
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-slate-600">Nama Lengkap</label>
-            <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"/>
+            <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"/>
           </div>
           <div>
             <label htmlFor="memberId" className="block text-sm font-medium text-slate-600">ID Anggota</label>
-            <input type="text" name="memberId" id="memberId" value={formData.memberId} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"/>
+            <input type="text" name="memberId" id="memberId" value={formData.memberId} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"/>
           </div>
           <div>
             <label htmlFor="joinDate" className="block text-sm font-medium text-slate-600">Tanggal Bergabung</label>
-            <input type="date" name="joinDate" id="joinDate" value={formData.joinDate} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"/>
+            <input type="date" name="joinDate" id="joinDate" value={formData.joinDate} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"/>
           </div>
           <div>
             <label htmlFor="status" className="block text-sm font-medium text-slate-600">Status</label>
-            <select name="status" id="status" value={formData.status} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+            <select name="status" id="status" value={formData.status} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500">
                 <option value="Aktif">Aktif</option>
                 <option value="Tidak Aktif">Tidak Aktif</option>
             </select>
           </div>
           <div className="mt-8 flex justify-end space-x-3">
             <button type="button" onClick={onClose} className="px-4 py-2 bg-slate-200 text-slate-800 rounded-md hover:bg-slate-300">Batal</button>
-            <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">Simpan</button>
+            <button type="submit" className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Simpan</button>
           </div>
         </form>
       </div>
@@ -128,7 +127,7 @@ const CooperativeManagement: React.FC = () => {
             <div className="flex justify-end">
                 <button 
                     onClick={() => handleOpenModal()} 
-                    className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 transition"
+                    className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition"
                 >
                     <PlusIcon className="w-5 h-5 mr-2"/>
                     Tambah Anggota
@@ -161,7 +160,7 @@ const CooperativeManagement: React.FC = () => {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button onClick={() => handleOpenModal(member)} className="text-indigo-600 hover:text-indigo-900 mr-4"><EditIcon className="w-5 h-5"/></button>
+                                        <button onClick={() => handleOpenModal(member)} className="text-red-600 hover:text-red-900 mr-4"><EditIcon className="w-5 h-5"/></button>
                                         <button onClick={() => deleteMember(member.id)} className="text-red-600 hover:text-red-900"><TrashIcon className="w-5 h-5"/></button>
                                     </td>
                                 </tr>

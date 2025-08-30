@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import usePosData from '../hooks/usePosData';
-import { OperationalCostCategory } from '../types';
+import { CustomerCategory } from '../types';
 import { EditIcon, TrashIcon, PlusIcon } from './icons/Icons';
 
-// Modal Component for Cost Category
-const CostCategoryModal: React.FC<{
+// Modal Component for Customer Category
+const CategoryModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
-  onSave: (category: Omit<OperationalCostCategory, 'id'> | OperationalCostCategory) => void;
-  category: OperationalCostCategory | null;
+  onSave: (category: Omit<CustomerCategory, 'id'> | CustomerCategory) => void;
+  category: CustomerCategory | null;
 }> = ({ isOpen, onClose, onSave, category }) => {
   const [name, setName] = useState('');
 
@@ -51,12 +51,12 @@ const CostCategoryModal: React.FC<{
 };
 
 // Main Component
-const OperationalCostCategoryManagement: React.FC = () => {
-    const { operationalCostCategories, addOperationalCostCategory, updateOperationalCostCategory, deleteOperationalCostCategory } = usePosData();
+const CustomerCategoryManagement: React.FC = () => {
+    const { customerCategories, addCustomerCategory, updateCustomerCategory, deleteCustomerCategory } = usePosData();
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingCategory, setEditingCategory] = useState<OperationalCostCategory | null>(null);
+    const [editingCategory, setEditingCategory] = useState<CustomerCategory | null>(null);
 
-    const handleOpenModal = (category: OperationalCostCategory | null = null) => {
+    const handleOpenModal = (category: CustomerCategory | null = null) => {
         setEditingCategory(category);
         setIsModalOpen(true);
     };
@@ -66,18 +66,18 @@ const OperationalCostCategoryManagement: React.FC = () => {
         setEditingCategory(null);
     };
 
-    const handleSaveCategory = (categoryData: Omit<OperationalCostCategory, 'id'> | OperationalCostCategory) => {
+    const handleSaveCategory = (categoryData: Omit<CustomerCategory, 'id'> | CustomerCategory) => {
         if ('id' in categoryData) {
-            updateOperationalCostCategory(categoryData);
+            updateCustomerCategory(categoryData);
         } else {
-            addOperationalCostCategory(categoryData);
+            addCustomerCategory(categoryData);
         }
     };
     
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                 <h2 className="text-3xl font-bold text-slate-800">Manajemen Kategori Biaya</h2>
+                 <h2 className="text-3xl font-bold text-slate-800">Manajemen Kategori Customer</h2>
             </div>
             
             <div className="flex justify-end">
@@ -100,18 +100,18 @@ const OperationalCostCategoryManagement: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-slate-200">
-                            {operationalCostCategories.length > 0 ? operationalCostCategories.map((category) => (
+                            {customerCategories.length > 0 ? customerCategories.map((category) => (
                                 <tr key={category.id}>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{category.name}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <button onClick={() => handleOpenModal(category)} className="text-red-600 hover:text-red-900 mr-4"><EditIcon className="w-5 h-5"/></button>
-                                        <button onClick={() => deleteOperationalCostCategory(category.id)} className="text-red-600 hover:text-red-900"><TrashIcon className="w-5 h-5"/></button>
+                                        <button onClick={() => deleteCustomerCategory(category.id)} className="text-red-600 hover:text-red-900"><TrashIcon className="w-5 h-5"/></button>
                                     </td>
                                 </tr>
                             )) : (
                                 <tr>
                                     <td colSpan={2} className="text-center py-10 text-slate-500">
-                                        Tidak ada kategori biaya operasional yang dibuat.
+                                        Tidak ada kategori customer yang dibuat.
                                     </td>
                                 </tr>
                             )}
@@ -120,9 +120,9 @@ const OperationalCostCategoryManagement: React.FC = () => {
                 </div>
             </div>
             
-            <CostCategoryModal isOpen={isModalOpen} onClose={handleCloseModal} onSave={handleSaveCategory} category={editingCategory} />
+            <CategoryModal isOpen={isModalOpen} onClose={handleCloseModal} onSave={handleSaveCategory} category={editingCategory} />
         </div>
     );
 };
 
-export default OperationalCostCategoryManagement;
+export default CustomerCategoryManagement;

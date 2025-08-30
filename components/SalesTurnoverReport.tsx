@@ -115,24 +115,24 @@ const SalesTurnoverReport: React.FC = () => {
             case 'daily':
                 return (
                     <>
-                        <input type="date" value={dailyFilter.startDate} onChange={(e) => setDailyFilter(p => ({...p, startDate: e.target.value}))} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"/>
-                        <input type="date" value={dailyFilter.endDate} onChange={(e) => setDailyFilter(p => ({...p, endDate: e.target.value}))} min={dailyFilter.startDate} disabled={!dailyFilter.startDate} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 disabled:bg-slate-100"/>
+                        <input type="date" value={dailyFilter.startDate} onChange={(e) => setDailyFilter(p => ({...p, startDate: e.target.value}))} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"/>
+                        <input type="date" value={dailyFilter.endDate} onChange={(e) => setDailyFilter(p => ({...p, endDate: e.target.value}))} min={dailyFilter.startDate} disabled={!dailyFilter.startDate} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 disabled:bg-slate-100"/>
                     </>
                 );
             case 'monthly':
                  return (
                     <>
-                        <select value={monthlyFilter.month} onChange={(e) => setMonthlyFilter(p => ({...p, month: parseInt(e.target.value)}))} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        <select value={monthlyFilter.month} onChange={(e) => setMonthlyFilter(p => ({...p, month: parseInt(e.target.value)}))} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500">
                              {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
                         </select>
-                        <select value={monthlyFilter.year} onChange={(e) => setMonthlyFilter(p => ({...p, year: parseInt(e.target.value)}))} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        <select value={monthlyFilter.year} onChange={(e) => setMonthlyFilter(p => ({...p, year: parseInt(e.target.value)}))} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500">
                              {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
                         </select>
                     </>
                 );
             case 'yearly':
                 return (
-                     <select value={yearlyFilter.year} onChange={(e) => setYearlyFilter(p => ({...p, year: parseInt(e.target.value)}))} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                     <select value={yearlyFilter.year} onChange={(e) => setYearlyFilter(p => ({...p, year: parseInt(e.target.value)}))} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500">
                          {availableYears.map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
                 );
@@ -149,11 +149,11 @@ const SalesTurnoverReport: React.FC = () => {
             {/* Filters */}
             <div className="p-4 bg-white rounded-lg shadow-md space-y-4">
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                     <select value={selectedUnit} onChange={(e) => setSelectedUnit(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                     <select value={selectedUnit} onChange={(e) => setSelectedUnit(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500">
                         <option value="all">Semua Unit Usaha</option>
                         {businessUnits.map(unit => <option key={unit.id} value={unit.id}>{unit.name}</option>)}
                     </select>
-                    <select value={selectedOutlet} onChange={(e) => setSelectedOutlet(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" disabled={selectedUnit === 'all'}>
+                    <select value={selectedOutlet} onChange={(e) => setSelectedOutlet(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500" disabled={selectedUnit === 'all'}>
                         <option value="all">Semua Outlet</option>
                         {availableOutlets.map(outlet => <option key={outlet.id} value={outlet.id}>{outlet.name}</option>)}
                     </select>
@@ -161,7 +161,7 @@ const SalesTurnoverReport: React.FC = () => {
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                     <div>
                         <label className="text-sm font-medium text-slate-600 block mb-1">Mode Waktu</label>
-                        <select value={timeFilterMode} onChange={(e) => setTimeFilterMode(e.target.value as any)} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                        <select value={timeFilterMode} onChange={(e) => setTimeFilterMode(e.target.value as any)} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500">
                             {timeFilterModeOpt.map((item, key) => (
                               <option value={item.value} key={key}>{item.title}</option>
                             ))}
@@ -174,7 +174,7 @@ const SalesTurnoverReport: React.FC = () => {
             {/* Summary */}
              <div className="bg-white p-6 rounded-lg shadow-md">
                 <p className="text-sm text-slate-500 font-medium">Total Omzet (Periode Terpilih)</p>
-                <p className="text-3xl font-bold text-indigo-600">{formatCurrency(reportData.totalTurnover)}</p>
+                <p className="text-3xl font-bold text-red-600">{formatCurrency(reportData.totalTurnover)}</p>
             </div>
 
             {/* Chart */}
@@ -187,7 +187,7 @@ const SalesTurnoverReport: React.FC = () => {
                         <YAxis stroke="#64748b" tickFormatter={(value) => formatCurrency(Number(value))} />
                         <Tooltip formatter={(value) => [formatCurrency(Number(value)), 'Omzet']} contentStyle={{ backgroundColor: '#fff', border: '1px solid #ccc' }}/>
                         <Legend />
-                        <Line type="monotone" dataKey="omzet" stroke="#4f46e5" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} name="Omzet Penjualan"/>
+                        <Line type="monotone" dataKey="omzet" stroke="#dc2626" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} name="Omzet Penjualan"/>
                     </LineChart>
                 </ResponsiveContainer>
             </div>

@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 const EmployeeManagement: React.FC = () => {
@@ -9,9 +8,9 @@ const EmployeeManagement: React.FC = () => {
                 Modul ini didedikasikan untuk pengelolaan data karyawan di setiap unit usaha dan outlet.
                 Anda akan dapat mengelola informasi pribadi, posisi, jadwal kerja, dan data terkait lainnya.
             </p>
-            <div className="mt-6 p-4 border-l-4 border-indigo-500 bg-indigo-50">
-                <p className="font-semibold text-indigo-800">Fitur yang Direncanakan:</p>
-                <ul className="list-disc list-inside text-indigo-700 mt-2">
+            <div className="mt-6 p-4 border-l-4 border-red-500 bg-red-50">
+                <p className="font-semibold text-red-800">Fitur yang Direncanakan:</p>
+                <ul className="list-disc list-inside text-red-700 mt-2">
                     <li>Daftar Karyawan per Outlet (CRUD)</li>
                     <li>Detail Informasi Karyawan</li>
                     {/* <li>Manajemen Posisi dan Jabatan</li> */}

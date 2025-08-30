@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 const UserManagement: React.FC = () => {
@@ -9,9 +8,9 @@ const UserManagement: React.FC = () => {
                 Sebagai admin, Anda dapat mengelola akun pengguna yang memiliki akses ke sistem back-office ini.
                 Anda akan dapat membuat pengguna baru, menetapkan peran, dan mengatur hak akses untuk setiap menu.
             </p>
-            <div className="mt-6 p-4 border-l-4 border-indigo-500 bg-indigo-50">
-                <p className="font-semibold text-indigo-800">Fitur yang Direncanakan:</p>
-                <ul className="list-disc list-inside text-indigo-700 mt-2">
+            <div className="mt-6 p-4 border-l-4 border-red-500 bg-red-50">
+                <p className="font-semibold text-red-800">Fitur yang Direncanakan:</p>
+                <ul className="list-disc list-inside text-red-700 mt-2">
                     <li>Daftar Pengguna Sistem (CRUD)</li>
                     <li>Manajemen Peran (Admin, Manajer, Staf)</li>
                     <li>Pengaturan Hak Akses per Peran (Role-Based Access Control)</li>

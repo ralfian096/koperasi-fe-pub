@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import usePosData from '../hooks/usePosData';
 import { User } from '../types';
@@ -31,7 +30,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
     <div className="flex items-center justify-center min-h-screen bg-slate-100">
       <div className="w-full max-w-md p-8 space-y-8 bg-white rounded-xl shadow-lg">
         <div className="flex flex-col items-center">
-          <LogoIcon className="w-12 h-12 text-indigo-600" />
+          <LogoIcon className="w-12 h-12 text-red-600" />
           <h2 className="mt-4 text-3xl font-bold text-center text-slate-900">
             Login ke Panel Admin
           </h2>
@@ -51,7 +50,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 type="text"
                 autoComplete="username"
                 required
-                className="relative block w-full px-3 py-2 text-gray-900 placeholder-gray-500 border border-gray-300 rounded-md appearance-none focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className="relative block w-full px-3 py-2 text-gray-900 placeholder-gray-500 border border-gray-300 rounded-md appearance-none focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
                 placeholder="Username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
@@ -67,7 +66,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 type="password"
                 autoComplete="current-password"
                 required
-                className="relative block w-full px-3 py-2 text-gray-900 placeholder-gray-500 border border-gray-300 rounded-md appearance-none focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                className="relative block w-full px-3 py-2 text-gray-900 placeholder-gray-500 border border-gray-300 rounded-md appearance-none focus:outline-none focus:ring-red-500 focus:border-red-500 focus:z-10 sm:text-sm"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -84,7 +83,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLoginSuccess }) => {
           <div>
             <button
               type="submit"
-              className="relative flex justify-center w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 border border-transparent rounded-md group hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              className="relative flex justify-center w-full px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md group hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
             >
               Login
             </button>

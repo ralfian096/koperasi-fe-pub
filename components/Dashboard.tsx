@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import usePosData from '../hooks/usePosData';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -23,8 +22,8 @@ const formatCurrency = (amount: number) => `Rp${amount.toLocaleString('id-ID')}`
 
 const MetricCard: React.FC<{ title: string; value: string; icon: React.ElementType }> = ({ title, value, icon: Icon }) => (
     <div className="bg-white p-6 rounded-lg shadow-md flex items-center">
-        <div className="bg-indigo-100 p-3 rounded-full">
-            <Icon className="h-6 w-6 text-indigo-600" />
+        <div className="bg-red-100 p-3 rounded-full">
+            <Icon className="h-6 w-6 text-red-600" />
         </div>
         <div className="ml-4">
             <p className="text-sm text-slate-500 font-medium">{title}</p>
@@ -38,7 +37,7 @@ const LowStockListItem: React.FC<{ product: Product; variant: Variant; categoryN
         <div className="flex items-center">
             <img src={product.imageUrl} alt={product.name} className="w-10 h-10 rounded-full object-cover mr-4" />
             <div>
-                <p className="font-semibold text-slate-700">{product.name} - <span className="text-indigo-600">{variant.name}</span></p>
+                <p className="font-semibold text-slate-700">{product.name} - <span className="text-red-600">{variant.name}</span></p>
                 <p className="text-sm text-slate-500">{categoryName}</p>
             </div>
         </div>
@@ -179,7 +178,7 @@ const Dashboard: React.FC = () => {
                     <select
                       value={selectedUnit}
                       onChange={(e) => setSelectedUnit(e.target.value)}
-                      className="w-full sm:w-auto px-4 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full sm:w-auto px-4 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
                     >
                       <option value="all">Semua Unit Usaha</option>
                       {businessUnits.map(unit => (
@@ -189,7 +188,7 @@ const Dashboard: React.FC = () => {
                     <select
                        value={selectedOutlet}
                        onChange={(e) => setSelectedOutlet(e.target.value)}
-                       className="w-full sm:w-auto px-4 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                       className="w-full sm:w-auto px-4 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
                        disabled={selectedUnit === 'all'}
                     >
                       <option value="all">Semua Outlet</option>
@@ -215,7 +214,7 @@ const Dashboard: React.FC = () => {
                         <YAxis stroke="#64748b" tickFormatter={(value) => `Rp${Number(value).toLocaleString('id-ID')}`} />
                         <Tooltip formatter={(value) => [`Rp${Number(value).toLocaleString('id-ID')}`, 'Penjualan']} contentStyle={{ backgroundColor: '#fff', border: '1px solid #ccc' }}/>
                         <Legend />
-                        <Line type="monotone" dataKey="penjualan" stroke="#4f46e5" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                        <Line type="monotone" dataKey="penjualan" stroke="#dc2626" strokeWidth={2} dot={{ r: 4 }} activeDot={{ r: 6 }} />
                     </LineChart>
                 </ResponsiveContainer>
             </div>
