@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { BusinessUnit } from '../types';
 import { EditIcon, TrashIcon, PlusIcon, ImagePlaceholderIcon } from './icons/Icons';
@@ -339,11 +340,7 @@ const BusinessUnitManagement: React.FC = () => {
             }
             const result = await response.json();
             if (result.code === 200 && result.data && Array.isArray(result.data.data)) {
-                const formattedData = result.data.data.map((unit: any) => ({
-                    ...unit,
-                    id: String(unit.id) 
-                }));
-                setBusinessUnits(formattedData);
+                setBusinessUnits(result.data.data);
             } else {
                 throw new Error(result.message || 'Format respons API tidak valid');
             }

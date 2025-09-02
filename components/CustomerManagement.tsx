@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNotification } from '../contexts/NotificationContext';
 import CustomerModal from './CustomerModal';
@@ -156,8 +157,8 @@ const CustomerManagement: React.FC = () => {
 
         const payload = {
             ...formData,
-            business_id: selectedUnit,
-            customer_category_id: formData.customer_category_id || null,
+            business_id: Number(selectedUnit),
+            customer_category_id: formData.customer_category_id ? Number(formData.customer_category_id) : null,
         };
 
         try {

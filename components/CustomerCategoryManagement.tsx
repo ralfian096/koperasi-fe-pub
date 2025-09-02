@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { EditIcon, TrashIcon, PlusIcon } from './icons/Icons';
 import { useNotification } from '../contexts/NotificationContext';
@@ -179,7 +180,7 @@ const CustomerCategoryManagement: React.FC = () => {
 
         const payload: any = { ...formData };
         if (!isEditing) {
-            payload.business_id = selectedUnit;
+            payload.business_id = Number(selectedUnit);
         }
 
         try {

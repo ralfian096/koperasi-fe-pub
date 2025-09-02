@@ -20,6 +20,7 @@ import { User } from './types';
 import CustomerManagement from './components/CustomerManagement';
 import CustomerCategoryManagement from './components/CustomerCategoryManagement';
 import { NotificationProvider } from './contexts/NotificationContext';
+import TaxManagement from './components/TaxManagement';
 
 export type View = 
   | 'dashboard' 
@@ -37,7 +38,8 @@ export type View =
   | 'business-units'
   | 'outlets'
   | 'customers'
-  | 'customer-categories';
+  | 'customer-categories'
+  | 'taxes';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<View>('dashboard');
@@ -89,6 +91,8 @@ const App: React.FC = () => {
         return <CustomerManagement />;
       case 'customer-categories':
         return <CustomerCategoryManagement />;
+      case 'taxes':
+        return <TaxManagement />;
       default:
         return <Dashboard />;
     }

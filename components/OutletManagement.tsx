@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { Outlet } from '../types';
 import { EditIcon, TrashIcon, PlusIcon } from './icons/Icons';
@@ -225,7 +226,7 @@ const OutletManagement: React.FC = () => {
                 addNotification('Tidak ada unit usaha yang dipilih.', 'error');
                 return Promise.reject(new Error('No business unit selected'));
             }
-            payload.business_id = selectedUnit;
+            payload.business_id = Number(selectedUnit);
         } else {
              payload.id = editingOutlet.id;
         }
