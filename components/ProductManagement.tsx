@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import usePosData from '../hooks/usePosData';
 import { Product, Outlet, ProductCategory, Variant, RentalResource, ResourceAvailability, CustomerCategory, CategoryPrice } from '../types';
@@ -24,7 +25,7 @@ const ProductModal: React.FC<{
     resourceAvailabilities: ResourceAvailability[];
     customerCategories: CustomerCategory[];
   };
-  outletForNewProduct: string;
+  outletForNewProduct: number | '';
 }> = ({ isOpen, onClose, onSave, product, allData, outletForNewProduct }) => {
   
   // State for the form
@@ -33,7 +34,7 @@ const ProductModal: React.FC<{
     description: '',
     categoryId: '',
     type: 'barang',
-    outletId: '',
+    outletId: 0,
     generalPrice: 0,
     categoryPrices: []
   });
@@ -51,6 +52,8 @@ const ProductModal: React.FC<{
   useEffect(() => {
     if (isOpen) {
       const currentOutletId = product?.outletId || outletForNewProduct;
+      if (!currentOutletId) return;
+
       const initialCategories = allData.categories.filter(c => c.outletId === currentOutletId);
       
       const baseData: ProductFormData = {
@@ -116,8 +119,8 @@ const ProductModal: React.FC<{
   // --- Category Price Handlers (for Variant) ---
   const handleVariantCategoryPriceChange = (vIndex: number, pIndex: number, field: 'categoryId' | 'price', value: string | number) => {
       const newVariants = [...variants];
-      // FIX: Type 'any' is not assignable to type 'never'. Cast the object to 'any' to allow dynamic property access.
-      (newVariants[vIndex].categoryPrices[pIndex] as any)[field] = value;
+      // FIX: The underlying type mismatch is resolved in `types.ts`, so the `as any` cast is no longer necessary for type safety.
+      newVariants[vIndex].categoryPrices[pIndex][field] = value as any;
       setVariants(newVariants);
   };
   const addVariantCategoryPrice = (vIndex: number) => {
@@ -139,8 +142,8 @@ const ProductModal: React.FC<{
   // --- Category Price Handlers (for Product 'sewa') ---
     const handleProductCategoryPriceChange = (pIndex: number, field: 'categoryId' | 'price', value: string | number) => {
       const newPrices = [...(formData.categoryPrices || [])];
-      // FIX: Type 'any' is not assignable to type 'never'. Cast the object to 'any' to allow dynamic property access.
-      (newPrices[pIndex] as any)[field] = value;
+      // FIX: The underlying type mismatch is resolved in `types.ts`, so the `as any` cast is no longer necessary for type safety.
+      newPrices[pIndex][field] = value as any;
       setFormData(f => ({...f, categoryPrices: newPrices}));
   };
   const addProductCategoryPrice = () => {
@@ -235,9 +238,9 @@ const ProductModal: React.FC<{
                             <p className="text-xs font-medium text-slate-600 mb-1">Harga Khusus per Kategori</p>
                             {variant.categoryPrices.map((p, pIndex) => (
                                 <div key={pIndex} className="flex items-center gap-2 mb-1">
-                                    <select value={p.categoryId} onChange={e => handleVariantCategoryPriceChange(vIndex, pIndex, 'categoryId', e.target.value)} className="w-full px-2 py-1 border border-slate-300 rounded-md text-sm">
+                                    <select value={String(p.categoryId)} onChange={e => handleVariantCategoryPriceChange(vIndex, pIndex, 'categoryId', e.target.value)} className="w-full px-2 py-1 border border-slate-300 rounded-md text-sm">
                                         <option value={p.categoryId}>{allData.customerCategories.find(c => c.id === p.categoryId)?.name}</option>
-                                        {getAvailableCustomerCategories(variant.categoryPrices).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                        {getAvailableCustomerCategories(variant.categoryPrices).map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
                                     </select>
                                     <input type="number" placeholder="Harga" value={p.price} onChange={e => handleVariantCategoryPriceChange(vIndex, pIndex, 'price', Number(e.target.value))} required className="w-full px-2 py-1 border border-slate-300 rounded-md text-sm"/>
                                     <button type="button" onClick={() => removeVariantCategoryPrice(vIndex, pIndex)} className="text-red-500 hover:text-red-700"><TrashIcon className="w-4 h-4"/></button>
@@ -261,9 +264,9 @@ const ProductModal: React.FC<{
                     <p className="text-sm font-medium text-slate-600 mb-1">Harga Khusus per Kategori</p>
                     {formData.categoryPrices?.map((p, pIndex) => (
                         <div key={pIndex} className="flex items-center gap-2 mb-2">
-                            <select value={p.categoryId} onChange={e => handleProductCategoryPriceChange(pIndex, 'categoryId', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
+                            <select value={String(p.categoryId)} onChange={e => handleProductCategoryPriceChange(pIndex, 'categoryId', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
                                 <option value={p.categoryId}>{allData.customerCategories.find(c => c.id === p.categoryId)?.name}</option>
-                                {getAvailableCustomerCategories(formData.categoryPrices).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                {getAvailableCustomerCategories(formData.categoryPrices).map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
                             </select>
                             <input type="number" placeholder="Harga" value={p.price} onChange={e => handleProductCategoryPriceChange(pIndex, 'price', Number(e.target.value))} required className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"/>
                             <button type="button" onClick={() => removeProductCategoryPrice(pIndex)} className="text-red-500 hover:text-red-700"><TrashIcon className="w-5 h-5"/></button>
@@ -319,17 +322,17 @@ const ProductManagement: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     
-    const [selectedUnit, setSelectedUnit] = useState<string>(businessUnits[0]?.id || '');
+    const [selectedUnit, setSelectedUnit] = useState<string>(String(businessUnits[0]?.id || ''));
     const [selectedOutlet, setSelectedOutlet] = useState<string>('');
 
     const availableOutlets = useMemo(() => {
-        return outlets.filter(o => o.businessUnitId === selectedUnit);
+        return outlets.filter(o => o.businessUnitId === Number(selectedUnit));
     }, [selectedUnit, outlets]);
     
     useEffect(() => {
         if (availableOutlets.length > 0) {
-            const currentOutletExists = availableOutlets.some(o => o.id === selectedOutlet);
-            if (!currentOutletExists) setSelectedOutlet(availableOutlets[0].id);
+            const currentOutletExists = availableOutlets.some(o => o.id === Number(selectedOutlet));
+            if (!currentOutletExists) setSelectedOutlet(String(availableOutlets[0].id));
         } else {
             setSelectedOutlet('');
         }
@@ -337,7 +340,7 @@ const ProductManagement: React.FC = () => {
 
     const filteredProducts = useMemo(() => {
         if (!selectedOutlet) return [];
-        return products.filter(p => p.outletId === selectedOutlet);
+        return products.filter(p => p.outletId === Number(selectedOutlet));
     }, [products, selectedOutlet]);
 
     const categoryMap = React.useMemo(() => 
@@ -456,7 +459,7 @@ const ProductManagement: React.FC = () => {
                 onSave={handleSaveProduct} 
                 product={editingProduct}
                 allData={{ outlets, categories, variants, rentalResources, resourceAvailabilities, customerCategories }}
-                outletForNewProduct={selectedOutlet}
+                outletForNewProduct={Number(selectedOutlet)}
             />}
         </div>
     );

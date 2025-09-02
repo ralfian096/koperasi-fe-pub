@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import usePosData from '../hooks/usePosData';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -66,7 +67,7 @@ const Dashboard: React.FC = () => {
 
     const availableOutlets = useMemo(() => {
         if (selectedUnit === 'all') return outlets;
-        return outlets.filter(o => o.businessUnitId === selectedUnit);
+        return outlets.filter(o => o.businessUnitId === Number(selectedUnit));
     }, [selectedUnit, outlets]);
     
     React.useEffect(() => {
@@ -90,10 +91,11 @@ const Dashboard: React.FC = () => {
         }
         
         if (selectedOutlet !== 'all') {
-            const productIdsInOutlet = products.filter(p => p.outletId === selectedOutlet).map(p => p.id);
-            filteredTransactions = filteredTransactions.filter(t => t.outletId === selectedOutlet);
-            filteredProducts = filteredProducts.filter(p => p.outletId === selectedOutlet);
-            filteredCosts = filteredCosts.filter(c => c.outletId === selectedOutlet);
+            const selectedOutletId = Number(selectedOutlet);
+            const productIdsInOutlet = products.filter(p => p.outletId === selectedOutletId).map(p => p.id);
+            filteredTransactions = filteredTransactions.filter(t => t.outletId === selectedOutletId);
+            filteredProducts = filteredProducts.filter(p => p.outletId === selectedOutletId);
+            filteredCosts = filteredCosts.filter(c => c.outletId === selectedOutletId);
             filteredVariants = filteredVariants.filter(v => productIdsInOutlet.includes(v.productId));
         }
 
@@ -122,7 +124,7 @@ const Dashboard: React.FC = () => {
     const summaryReport = useMemo(() => {
         const unitsToShow = selectedUnit === 'all' 
             ? businessUnits 
-            : businessUnits.filter(bu => bu.id === selectedUnit);
+            : businessUnits.filter(bu => bu.id === Number(selectedUnit));
 
         return unitsToShow.map(unit => {
             const outletsInUnit = outlets.filter(o => o.businessUnitId === unit.id);

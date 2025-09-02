@@ -4,34 +4,34 @@ import { Product, Transaction, TransactionItem, BusinessUnit, Outlet, Member, Em
 
 // Mock Data Generators
 const generateInitialBusinessUnits = (): BusinessUnit[] => [
-  { id: 'unit-1', name: 'Kopi Kenangan' },
-  { id: 'unit-2', name: 'Penyewaan Biliar & Pesta' },
+  { id: 1, logo: null, name: 'Kopi Kenangan', email: 'cs@kopikenangan.com', contact: '08111222333', description: 'Sebuah brand kopi kekinian di Indonesia.', website: 'https://kopikenangan.com', instagram: 'kopikenangan.id', tiktok: '@kopikenangan.id', is_active: '1' },
+  { id: 2, logo: null, name: 'Penyewaan Biliar & Pesta', email: 'info@sewabiliar.com', contact: '08998887776', description: 'Penyewaan meja biliar dan perlengkapan pesta.', website: null, instagram: null, tiktok: null, is_active: '1' },
 ];
 
 const generateInitialOutlets = (units: BusinessUnit[]): Outlet[] => [
-  { id: 'outlet-1', name: 'KK - Grand Indonesia', businessUnitId: 'unit-1' },
-  { id: 'outlet-2', name: 'KK - Senayan City', businessUnitId: 'unit-1' },
-  { id: 'outlet-3', name: 'Sewa Cepat - Jakarta Pusat', businessUnitId: 'unit-2' },
-  { id: 'outlet-4', name: 'Sewa Mudah - Jakarta Selatan', businessUnitId: 'unit-2' },
+  { id: 101, name: 'KK - Grand Indonesia', businessUnitId: 1 },
+  { id: 102, name: 'KK - Senayan City', businessUnitId: 1 },
+  { id: 201, name: 'Sewa Cepat - Jakarta Pusat', businessUnitId: 2 },
+  { id: 202, name: 'Sewa Mudah - Jakarta Selatan', businessUnitId: 2 },
 ];
 
 const generateInitialCategories = (outlets: Outlet[]): ProductCategory[] => [
-    { id: 'cat-1', name: 'Kopi Panas', outletId: 'outlet-1' },
-    { id: 'cat-2', name: 'Kopi Dingin', outletId: 'outlet-1' },
-    { id: 'cat-3', name: 'Minuman Non-Kopi', outletId: 'outlet-2' },
-    { id: 'cat-4', name: 'Meja Biliar', outletId: 'outlet-3' },
-    { id: 'cat-5', name: 'Peralatan Makan', outletId: 'outlet-3' },
-    { id: 'cat-6', name: 'Tenda & Dekorasi', outletId: 'outlet-4' },
+    { id: 'cat-1', name: 'Kopi Panas', outletId: 101 },
+    { id: 'cat-2', name: 'Kopi Dingin', outletId: 101 },
+    { id: 'cat-3', name: 'Minuman Non-Kopi', outletId: 102 },
+    { id: 'cat-4', name: 'Meja Biliar', outletId: 201 },
+    { id: 'cat-5', name: 'Peralatan Makan', outletId: 201 },
+    { id: 'cat-6', name: 'Tenda & Dekorasi', outletId: 202 },
 ];
 
 const generateInitialProducts = (): Product[] => [
   // Barang Products (price is on variant)
-  { id: 'prod-1', name: 'Latte', description: 'Kopi susu klasik dengan foam lembut.', categoryId: 'cat-1', type: 'barang', imageUrl: 'https://picsum.photos/seed/latte/400', outletId: 'outlet-1' },
-  { id: 'prod-2', name: 'Americano', description: 'Espresso shot dengan tambahan air panas.', categoryId: 'cat-1', type: 'barang', imageUrl: 'https://picsum.photos/seed/americano/400', outletId: 'outlet-1' },
-  { id: 'prod-3', name: 'Thai Tea', description: 'Teh susu Thailand otentik.', categoryId: 'cat-3', type: 'barang', imageUrl: 'https://picsum.photos/seed/thaitea/400', outletId: 'outlet-2' },
+  { id: 'prod-1', name: 'Latte', description: 'Kopi susu klasik dengan foam lembut.', categoryId: 'cat-1', type: 'barang', imageUrl: 'https://picsum.photos/seed/latte/400', outletId: 101 },
+  { id: 'prod-2', name: 'Americano', description: 'Espresso shot dengan tambahan air panas.', categoryId: 'cat-1', type: 'barang', imageUrl: 'https://picsum.photos/seed/americano/400', outletId: 101 },
+  { id: 'prod-3', name: 'Thai Tea', description: 'Teh susu Thailand otentik.', categoryId: 'cat-3', type: 'barang', imageUrl: 'https://picsum.photos/seed/thaitea/400', outletId: 102 },
   // Sewa Products (price is on product)
-  { id: 'prod-4', name: 'Sewa Meja Biliar', description: 'Sewa meja biliar standar internasional per jam.', categoryId: 'cat-4', generalPrice: 50000, categoryPrices: [{ categoryId: 'cust-cat-2', price: 45000 }], type: 'sewa', imageUrl: 'https://picsum.photos/seed/billiard/400', outletId: 'outlet-3' },
-  { id: 'prod-5', name: 'Tenda Roder', description: 'Sewa tenda roder untuk acara besar, harga per hari.', categoryId: 'cat-6', generalPrice: 1500000, categoryPrices: [{ categoryId: 'cust-cat-3', price: 1350000 }], type: 'sewa', imageUrl: 'https://picsum.photos/seed/tent/400', outletId: 'outlet-4' },
+  { id: 'prod-4', name: 'Sewa Meja Biliar', description: 'Sewa meja biliar standar internasional per jam.', categoryId: 'cat-4', generalPrice: 50000, categoryPrices: [{ categoryId: 'cust-cat-2', price: 45000 }], type: 'sewa', imageUrl: 'https://picsum.photos/seed/billiard/400', outletId: 201 },
+  { id: 'prod-5', name: 'Tenda Roder', description: 'Sewa tenda roder untuk acara besar, harga per hari.', categoryId: 'cat-6', generalPrice: 1500000, categoryPrices: [{ categoryId: 'cust-cat-3', price: 1350000 }], type: 'sewa', imageUrl: 'https://picsum.photos/seed/tent/400', outletId: 202 },
 ];
 
 const generateInitialVariants = (): Variant[] => [
@@ -135,10 +135,10 @@ const generateInitialMembers = (): Member[] => [
     { id: 'mem-3', name: 'Dewi Anggraini', memberId: 'KOP-003', joinDate: new Date('2021-11-10'), status: 'Tidak Aktif' },
 ];
 const generateInitialEmployees = (outlets: Outlet[]): Employee[] => [
-    { id: 'emp-1', name: 'Adi Nugroho', position: 'Barista', outletId: 'outlet-1' },
-    { id: 'emp-2', name: 'Eka Putri', position: 'Kasir', outletId: 'outlet-1' },
-    { id: 'emp-3', name: 'Fajar Maulana', position: 'Staf Sewa', outletId: 'outlet-3' },
-    { id: 'emp-4', name: 'Gita Permata', position: 'Manajer Outlet', outletId: 'outlet-4' },
+    { id: 'emp-1', name: 'Adi Nugroho', position: 'Barista', outletId: 101 },
+    { id: 'emp-2', name: 'Eka Putri', position: 'Kasir', outletId: 101 },
+    { id: 'emp-3', name: 'Fajar Maulana', position: 'Staf Sewa', outletId: 201 },
+    { id: 'emp-4', name: 'Gita Permata', position: 'Manajer Outlet', outletId: 202 },
 ];
 const generateInitialOperationalCostCategories = (): OperationalCostCategory[] => [
     { id: 'opcat-1', name: 'Gaji Karyawan' },
@@ -148,8 +148,8 @@ const generateInitialOperationalCostCategories = (): OperationalCostCategory[] =
     { id: 'opcat-5', name: 'Lain-lain' },
 ];
 const generateInitialOperationalCosts = (outlets: Outlet[], categories: OperationalCostCategory[]): OperationalCost[] => [
-    { id: 'cost-1', description: 'Sewa Kios Bulan Juli', amount: 5000000, date: new Date(), outletId: 'outlet-1', categoryId: 'opcat-2' },
-    { id: 'cost-2', description: 'Tagihan Listrik', amount: 1500000, date: new Date(), outletId: 'outlet-3', categoryId: 'opcat-3' },
+    { id: 'cost-1', description: 'Sewa Kios Bulan Juli', amount: 5000000, date: new Date(), outletId: 101, categoryId: 'opcat-2' },
+    { id: 'cost-2', description: 'Tagihan Listrik', amount: 1500000, date: new Date(), outletId: 201, categoryId: 'opcat-3' },
 ];
 const generateInitialUsers = (): User[] => [
     { id: 'user-1', username: 'admin', password: 'admin', role: 'Admin' },
@@ -164,10 +164,11 @@ const generateInitialCustomerCategories = (): CustomerCategory[] => [
 ];
 
 const generateInitialCustomers = (businessUnits: BusinessUnit[], categories: CustomerCategory[]): Customer[] => [
-    { id: 'cust-1', name: 'Rina Marlina', phone: '081234567890', categoryId: 'cust-cat-1', businessUnitId: 'unit-1' },
-    { id: 'cust-2', name: 'Joko Widodo', phone: '081298765432', categoryId: 'cust-cat-2', businessUnitId: 'unit-1' },
-    { id: 'cust-3', name: 'Siti Aminah', phone: '085611223344', categoryId: 'cust-cat-1', businessUnitId: 'unit-2' },
-    { id: 'cust-4', name: 'Bambang Pamungkas', phone: '087755667788', categoryId: 'cust-cat-3', businessUnitId: 'unit-2' },
+    // FIX: Changed property name from `phone` to `phone_number` to match the Customer type definition.
+    { id: 'cust-1', name: 'Rina Marlina', phone_number: '081234567890', categoryId: 'cust-cat-1', businessUnitId: 1 },
+    { id: 'cust-2', name: 'Joko Widodo', phone_number: '081298765432', categoryId: 'cust-cat-2', businessUnitId: 1 },
+    { id: 'cust-3', name: 'Siti Aminah', phone_number: '085611223344', categoryId: 'cust-cat-1', businessUnitId: 2 },
+    { id: 'cust-4', name: 'Bambang Pamungkas', phone_number: '087755667788', categoryId: 'cust-cat-3', businessUnitId: 2 },
 ];
 
 
@@ -233,13 +234,13 @@ const usePosData = () => {
 
     // Business Unit CRUD
     const addBusinessUnit = (unit: Omit<BusinessUnit, 'id'>) => {
-        const newUnit: BusinessUnit = { ...unit, id: `unit-${Date.now()}` };
+        const newUnit: BusinessUnit = { ...unit, id: Date.now() };
         setBusinessUnits(prev => [...prev, newUnit]);
     };
     const updateBusinessUnit = (updatedUnit: BusinessUnit) => {
         setBusinessUnits(prev => prev.map(u => u.id === updatedUnit.id ? updatedUnit : u));
     };
-    const deleteBusinessUnit = (unitId: string) => {
+    const deleteBusinessUnit = (unitId: number) => {
         const outletsToDelete = outlets.filter(o => o.businessUnitId === unitId);
         outletsToDelete.forEach(outlet => deleteOutlet(outlet.id));
         setBusinessUnits(prev => prev.filter(u => u.id !== unitId));
@@ -247,13 +248,13 @@ const usePosData = () => {
 
     // Outlet CRUD
     const addOutlet = (outlet: Omit<Outlet, 'id'>) => {
-        const newOutlet: Outlet = { ...outlet, id: `outlet-${Date.now()}` };
+        const newOutlet: Outlet = { ...outlet, id: Date.now() };
         setOutlets(prev => [...prev, newOutlet]);
     };
     const updateOutlet = (updatedOutlet: Outlet) => {
         setOutlets(prev => prev.map(o => o.id === updatedOutlet.id ? updatedOutlet : o));
     };
-    const deleteOutlet = (outletId: string) => {
+    const deleteOutlet = (outletId: number) => {
         const productsToDelete = products.filter(p => p.outletId === outletId);
         productsToDelete.forEach(p => deleteProduct(p.id)); // Cascading delete for products
         
@@ -385,7 +386,8 @@ const usePosData = () => {
     const updateCustomerCategory = (updatedCategory: CustomerCategory) => {
         setCustomerCategories(prev => prev.map(c => c.id === updatedCategory.id ? updatedCategory : c));
     };
-    const deleteCustomerCategory = (categoryId: string) => {
+    // FIX: Changed categoryId parameter type from `string` to `string | number` to match CustomerCategory type.
+    const deleteCustomerCategory = (categoryId: string | number) => {
         setCustomerCategories(prev => prev.filter(c => c.id !== categoryId));
     };
 

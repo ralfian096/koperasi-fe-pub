@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import usePosData from '../../hooks/usePosData';
 import { OperationalCost } from '../../types';
@@ -102,7 +103,7 @@ const OperationalCosts: React.FC = () => {
     const [editingCost, setEditingCost] = useState<OperationalCost | null>(null);
 
     // Filters
-    const [selectedUnit, setSelectedUnit] = useState<string>(businessUnits[0]?.id || '');
+    const [selectedUnit, setSelectedUnit] = useState<string>(String(businessUnits[0]?.id || ''));
     const [selectedOutlet, setSelectedOutlet] = useState<string>('');
     const [selectedMonth, setSelectedMonth] = useState<string>(String(new Date().getMonth() + 1));
     const [selectedYear, setSelectedYear] = useState<string>(String(new Date().getFullYear()));
@@ -115,24 +116,26 @@ const OperationalCosts: React.FC = () => {
     [operationalCostCategories]);
 
     const availableOutlets = useMemo(() => {
-        return outlets.filter(o => o.businessUnitId === selectedUnit);
+        return outlets.filter(o => o.businessUnitId === Number(selectedUnit));
     }, [selectedUnit, outlets]);
     
     useEffect(() => {
         if (availableOutlets.length > 0) {
-            const currentOutletExists = availableOutlets.some(o => o.id === selectedOutlet);
-            if (!currentOutletExists) setSelectedOutlet(availableOutlets[0].id);
+            const currentOutletExists = availableOutlets.some(o => o.id === Number(selectedOutlet));
+            if (!currentOutletExists) setSelectedOutlet(String(availableOutlets[0].id));
         } else {
             setSelectedOutlet('');
         }
     }, [selectedUnit, availableOutlets, selectedOutlet]);
 
     const filteredCosts = useMemo(() => {
+        if (!selectedOutlet) return [];
+        const selectedOutletId = Number(selectedOutlet);
         return operationalCosts.filter(cost => {
             const costDate = new Date(cost.date);
             const monthMatch = selectedMonth === 'all' || costDate.getMonth() + 1 === parseInt(selectedMonth);
             const yearMatch = costDate.getFullYear() === parseInt(selectedYear);
-            return cost.outletId === selectedOutlet && monthMatch && yearMatch;
+            return cost.outletId === selectedOutletId && monthMatch && yearMatch;
         }).sort((a, b) => b.date.getTime() - a.date.getTime());
     }, [operationalCosts, selectedOutlet, selectedMonth, selectedYear]);
 
@@ -150,7 +153,7 @@ const OperationalCosts: React.FC = () => {
         if ('id' in costData) {
             updateOperationalCost(costData);
         } else if (selectedOutlet) {
-            addOperationalCost({ ...costData, outletId: selectedOutlet });
+            addOperationalCost({ ...costData, outletId: Number(selectedOutlet) });
         }
     };
 

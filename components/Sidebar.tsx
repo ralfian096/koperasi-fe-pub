@@ -88,8 +88,11 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView, onLogout
                         <NavLink Icon={() => <span className="w-5 mr-4" />} view="employees" label="Karyawan" isSubItem {...{ currentView, setCurrentView }} />
                         <NavLink Icon={() => <span className="w-5 mr-4" />} view="customers" label="Customer" isSubItem {...{ currentView, setCurrentView }} />
                         <NavLink Icon={() => <span className="w-5 mr-4" />} view="customer-categories" label="Kategori Customer" isSubItem {...{ currentView, setCurrentView }} />
+
+                       {/*
                         <NavLink Icon={() => <span className="w-5 mr-4" />} view="operational-costs" label="Biaya Operasional" isSubItem {...{ currentView, setCurrentView }} />
                         <NavLink Icon={() => <span className="w-5 mr-4" />} view="operational-cost-categories" label="Kategori Biaya" isSubItem {...{ currentView, setCurrentView }} />
+                        */}
                     </NavGroup>
 
                     <NavGroup label="Laporan" Icon={ReportIcon} id="reports" {...{ openMenu, setOpenMenu }}>

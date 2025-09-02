@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import usePosData from '../hooks/usePosData';
 import { Transaction } from '../types';
@@ -36,7 +37,7 @@ const TransactionRow: React.FC<{ transaction: Transaction; customerName: string;
 const TransactionHistory: React.FC = () => {
     const { businessUnits, outlets, transactions, customers } = usePosData();
     
-    const [selectedUnit, setSelectedUnit] = useState<string>(businessUnits[0]?.id || '');
+    const [selectedUnit, setSelectedUnit] = useState<string>(String(businessUnits[0]?.id || ''));
     const [selectedOutlet, setSelectedOutlet] = useState<string>('');
     const [startDate, setStartDate] = useState<string>('');
     const [endDate, setEndDate] = useState<string>('');
@@ -57,14 +58,14 @@ const TransactionHistory: React.FC = () => {
     }, [endDate, startDate]);
     
     const availableOutlets = useMemo(() => {
-        return outlets.filter(o => o.businessUnitId === selectedUnit);
+        return outlets.filter(o => o.businessUnitId === Number(selectedUnit));
     }, [selectedUnit, outlets]);
     
     useEffect(() => {
         if (availableOutlets.length > 0) {
-            const currentOutletExists = availableOutlets.some(o => o.id === selectedOutlet);
+            const currentOutletExists = availableOutlets.some(o => o.id === Number(selectedOutlet));
             if (!currentOutletExists) {
-                setSelectedOutlet(availableOutlets[0].id);
+                setSelectedOutlet(String(availableOutlets[0].id));
             }
         } else {
             setSelectedOutlet('');
@@ -79,11 +80,13 @@ const TransactionHistory: React.FC = () => {
 
         const end = endDate ? new Date(endDate) : null;
         if(end) end.setHours(23, 59, 59, 999);
+        
+        const selectedOutletId = Number(selectedOutlet);
 
         return transactions
             .filter(t => {
                 // Filter Outlet
-                if (t.outletId !== selectedOutlet) return false;
+                if (t.outletId !== selectedOutletId) return false;
                 
                 // Filter Tanggal
                 const transactionDate = new Date(t.date);

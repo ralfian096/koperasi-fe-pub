@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import usePosData from '../hooks/usePosData';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
@@ -25,7 +26,7 @@ const SalesTurnoverReport: React.FC = () => {
 
     const availableOutlets = useMemo(() => {
         if (selectedUnit === 'all') return outlets;
-        return outlets.filter(o => o.businessUnitId === selectedUnit);
+        return outlets.filter(o => o.businessUnitId === Number(selectedUnit));
     }, [selectedUnit, outlets]);
     
     useEffect(() => {
@@ -58,13 +59,13 @@ const SalesTurnoverReport: React.FC = () => {
                 break;
         }
         
-        let relevantOutletIds: string[];
+        let relevantOutletIds: number[];
         if (selectedUnit === 'all') {
             relevantOutletIds = outlets.map(o => o.id);
         } else if (selectedOutlet === 'all') {
             relevantOutletIds = availableOutlets.map(o => o.id);
         } else {
-            relevantOutletIds = [selectedOutlet];
+            relevantOutletIds = [Number(selectedOutlet)];
         }
 
         const filteredTransactions = transactions.filter(t => {

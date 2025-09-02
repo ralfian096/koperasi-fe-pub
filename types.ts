@@ -1,24 +1,39 @@
 
+
 export interface BusinessUnit {
-  id: string;
+  id: number;
+  logo: string | null;
   name: string;
+  email: string | null;
+  contact: string | null;
+  description: string | null;
+  website: string | null;
+  instagram: string | null;
+  tiktok: string | null;
+  is_active: string; // "1" = active, "0" = inactive
+  outlets?: any[];
 }
 
 export interface Outlet {
-  id: string;
+  id: number;
   name: string;
-  businessUnitId: string;
+  businessUnitId: number;
+  contact?: string | null;
+  address?: string | null;
+  geolocation?: string | null;
+  is_active?: string; // "1" = active, "0" = inactive
 }
 
 export interface ProductCategory {
   id: string;
   name: string;
-  outletId: string;
+  outletId: number;
 }
 
 // New Product-related interfaces for advanced features
 export interface CategoryPrice {
-  categoryId: string;
+  // FIX: Changed categoryId from `string` to `string | number` to match the `CustomerCategory` id type.
+  categoryId: string | number;
   price: number;
 }
 
@@ -58,7 +73,7 @@ export interface Product {
   categoryPrices?: CategoryPrice[];
   type: 'barang' | 'sewa';
   imageUrl: string;
-  outletId: string;
+  outletId: number;
 }
 
 export interface TransactionItem {
@@ -74,7 +89,7 @@ export interface Transaction {
   items: TransactionItem[];
   total: number;
   date: Date;
-  outletId: string;
+  outletId: number;
   status: 'Selesai' | 'Refund';
   paymentMethod: 'Tunai' | 'Kartu Kredit' | 'QRIS';
   customerId?: string;
@@ -93,7 +108,7 @@ export interface Employee {
     id: string;
     name: string;
     position: string;
-    outletId: string;
+    outletId: number;
 }
 
 export interface OperationalCostCategory {
@@ -106,7 +121,7 @@ export interface OperationalCost {
     description: string;
     amount: number;
     date: Date;
-    outletId: string;
+    outletId: number;
     categoryId: string;
 }
 
@@ -119,14 +134,16 @@ export interface User {
 }
 
 export interface CustomerCategory {
-  id: string;
+  id: string | number;
   name: string;
 }
 
 export interface Customer {
   id: string;
   name: string;
-  phone: string;
+  phone_number: string;
+  email?: string | null;
+  address?: string | null;
   categoryId: string;
-  businessUnitId: string;
+  businessUnitId: number;
 }

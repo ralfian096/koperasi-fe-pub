@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import usePosData from '../hooks/usePosData';
 import { Transaction, OperationalCost } from '../types';
@@ -24,7 +25,7 @@ const ProfitLossReport: React.FC = () => {
 
     const availableOutlets = useMemo(() => {
         if (selectedUnit === 'all') return outlets;
-        return outlets.filter(o => o.businessUnitId === selectedUnit);
+        return outlets.filter(o => o.businessUnitId === Number(selectedUnit));
     }, [selectedUnit, outlets]);
     
     useEffect(() => {
@@ -64,13 +65,13 @@ const ProfitLossReport: React.FC = () => {
                 break;
         }
 
-        let relevantOutletIds: string[];
+        let relevantOutletIds: number[];
         if (selectedUnit === 'all') {
             relevantOutletIds = outlets.map(o => o.id);
         } else if (selectedOutlet === 'all') {
             relevantOutletIds = availableOutlets.map(o => o.id);
         } else {
-            relevantOutletIds = [selectedOutlet];
+            relevantOutletIds = [Number(selectedOutlet)];
         }
 
         const filteredTransactions = transactions.filter(t => {

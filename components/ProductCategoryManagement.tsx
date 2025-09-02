@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import usePosData from '../hooks/usePosData';
 import { ProductCategory } from '../types';
@@ -56,19 +57,19 @@ const ProductCategoryManagement: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<ProductCategory | null>(null);
 
-    const [selectedUnit, setSelectedUnit] = useState<string>(businessUnits[0]?.id || '');
+    const [selectedUnit, setSelectedUnit] = useState<string>(String(businessUnits[0]?.id || ''));
     const [selectedOutlet, setSelectedOutlet] = useState<string>('');
 
     const availableOutlets = useMemo(() => {
-        return outlets.filter(o => o.businessUnitId === selectedUnit);
+        return outlets.filter(o => o.businessUnitId === Number(selectedUnit));
     }, [selectedUnit, outlets]);
     
     useEffect(() => {
         if (availableOutlets.length > 0) {
             // Cek apakah outlet yang dipilih saat ini masih ada di daftar yang tersedia
-            const currentOutletExists = availableOutlets.some(o => o.id === selectedOutlet);
+            const currentOutletExists = availableOutlets.some(o => o.id === Number(selectedOutlet));
             if (!currentOutletExists) {
-                setSelectedOutlet(availableOutlets[0].id);
+                setSelectedOutlet(String(availableOutlets[0].id));
             }
         } else {
             setSelectedOutlet('');
@@ -77,7 +78,7 @@ const ProductCategoryManagement: React.FC = () => {
 
     const filteredCategories = useMemo(() => {
         if (!selectedOutlet) return [];
-        return categories.filter(c => c.outletId === selectedOutlet);
+        return categories.filter(c => c.outletId === Number(selectedOutlet));
     }, [categories, selectedOutlet]);
 
     const handleOpenModal = (category: ProductCategory | null = null) => {
@@ -95,7 +96,7 @@ const ProductCategoryManagement: React.FC = () => {
             updateCategory(categoryData);
         } else {
             if (selectedOutlet) {
-                addCategory({ ...categoryData, outletId: selectedOutlet });
+                addCategory({ ...categoryData, outletId: Number(selectedOutlet) });
             }
         }
     };
