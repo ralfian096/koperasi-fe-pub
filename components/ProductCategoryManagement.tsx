@@ -1,35 +1,53 @@
-
-import React, { useState, useMemo, useEffect } from 'react';
-import usePosData from '../hooks/usePosData';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { ProductCategory } from '../types';
 import { EditIcon, TrashIcon, PlusIcon } from './icons/Icons';
+import { useNotification } from '../contexts/NotificationContext';
+import ConfirmationModal from './ConfirmationModal';
+
+const API_ENDPOINT = 'https://api.majukoperasiku.my.id/manage/product-categories';
+const API_BUSINESS_SUMMARY_ENDPOINT = 'https://api.majukoperasiku.my.id/manage/business/summary';
+
+// Type for the business unit summary API response
+interface ApiUnitSummary {
+    id: number;
+    name: string;
+    outlets: {
+        id: number;
+        name: string;
+    }[];
+}
 
 // Modal Component for Category
 const CategoryModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
-  onSave: (category: Omit<ProductCategory, 'id' | 'outletId'> | ProductCategory) => void;
+  onSave: (formData: { name: string }) => Promise<void>;
   category: ProductCategory | null;
 }> = ({ isOpen, onClose, onSave, category }) => {
   const [name, setName] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
         setName(category?.name || '');
+        setIsSaving(false);
     }
   }, [category, isOpen]);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (name.trim() === '') return;
-    if (category) {
-      onSave({ ...category, name });
-    } else {
-      onSave({ name });
+    setIsSaving(true);
+    try {
+        await onSave({ name });
+        onClose();
+    } catch (error) {
+        // Keep modal open on failure
+    } finally {
+        setIsSaving(false);
     }
-    onClose();
   };
 
   return (
@@ -39,11 +57,13 @@ const CategoryModal: React.FC<{
         <form onSubmit={handleSubmit}>
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-slate-600">Nama Kategori</label>
-            <input type="text" name="name" id="name" value={name} onChange={(e) => setName(e.target.value)} required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"/>
+            <input type="text" name="name" id="name" value={name} onChange={(e) => setName(e.target.value)} required disabled={isSaving} className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"/>
           </div>
           <div className="mt-8 flex justify-end space-x-3">
-            <button type="button" onClick={onClose} className="px-4 py-2 bg-slate-200 text-slate-800 rounded-md hover:bg-slate-300">Batal</button>
-            <button type="submit" className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Simpan</button>
+            <button type="button" onClick={onClose} disabled={isSaving} className="px-4 py-2 bg-slate-200 text-slate-800 rounded-md hover:bg-slate-300">Batal</button>
+            <button type="submit" disabled={isSaving} className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 w-28 disabled:opacity-50 disabled:cursor-wait">
+                {isSaving ? 'Menyimpan...' : 'Simpan'}
+            </button>
           </div>
         </form>
       </div>
@@ -53,20 +73,63 @@ const CategoryModal: React.FC<{
 
 // Main Component
 const ProductCategoryManagement: React.FC = () => {
-    const { businessUnits, outlets, categories, addCategory, updateCategory, deleteCategory } = usePosData();
+    const { addNotification } = useNotification();
+    
+    // API-driven state
+    const [apiBusinessUnits, setApiBusinessUnits] = useState<ApiUnitSummary[]>([]);
+    const [categories, setCategories] = useState<ProductCategory[]>([]);
+    
+    // Loading states
+    const [isLoadingUnits, setIsLoadingUnits] = useState(true);
+    const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+
+    // Modal and delete confirmation state
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<ProductCategory | null>(null);
+    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+    const [deletingCategory, setDeletingCategory] = useState<ProductCategory | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
-    const [selectedUnit, setSelectedUnit] = useState<string>(String(businessUnits[0]?.id || ''));
+    // Filter state
+    const [selectedUnit, setSelectedUnit] = useState<string>('');
     const [selectedOutlet, setSelectedOutlet] = useState<string>('');
 
-    const availableOutlets = useMemo(() => {
-        return outlets.filter(o => o.businessUnitId === Number(selectedUnit));
-    }, [selectedUnit, outlets]);
+    // Fetch business units for the filter dropdown
+    useEffect(() => {
+        const fetchBusinessUnits = async () => {
+            setIsLoadingUnits(true);
+            try {
+                const response = await fetch(API_BUSINESS_SUMMARY_ENDPOINT);
+                if (!response.ok) throw new Error('Gagal memuat unit bisnis');
+                const result = await response.json();
+                if (result.code === 200 && result.data && Array.isArray(result.data.data)) {
+                    const units: ApiUnitSummary[] = result.data.data;
+                    setApiBusinessUnits(units);
+                    if (units.length > 0) {
+                        setSelectedUnit(current => current || String(units[0].id));
+                    }
+                } else {
+                    throw new Error(result.message || 'Format data unit bisnis tidak valid');
+                }
+            } catch (err: any) {
+                addNotification(`Gagal memuat data: ${err.message}`, 'error');
+            } finally {
+                setIsLoadingUnits(false);
+            }
+        };
+        fetchBusinessUnits();
+    }, [addNotification]);
     
+    // Derived state for available outlets based on selected business unit
+    const availableOutlets = useMemo(() => {
+        if (!selectedUnit) return [];
+        const unit = apiBusinessUnits.find(u => u.id === Number(selectedUnit));
+        return unit?.outlets || [];
+    }, [selectedUnit, apiBusinessUnits]);
+    
+    // Effect to auto-select an outlet when the unit changes or outlets load
     useEffect(() => {
         if (availableOutlets.length > 0) {
-            // Cek apakah outlet yang dipilih saat ini masih ada di daftar yang tersedia
             const currentOutletExists = availableOutlets.some(o => o.id === Number(selectedOutlet));
             if (!currentOutletExists) {
                 setSelectedOutlet(String(availableOutlets[0].id));
@@ -74,12 +137,38 @@ const ProductCategoryManagement: React.FC = () => {
         } else {
             setSelectedOutlet('');
         }
-    }, [selectedUnit, availableOutlets, selectedOutlet]);
+    }, [availableOutlets, selectedOutlet]);
+    
+    const fetchCategories = useCallback(async () => {
+        if (!selectedUnit || !selectedOutlet) {
+            setCategories([]);
+            return;
+        }
+        setIsLoadingCategories(true);
+        try {
+            const response = await fetch(`${API_ENDPOINT}?business_id=${selectedUnit}&outlet_id=${selectedOutlet}`);
+            if (!response.ok) throw new Error('Gagal memuat kategori produk');
+            const result = await response.json();
+            if (result.code === 200 && result.data && Array.isArray(result.data.data)) {
+                setCategories(result.data.data);
+            } else {
+                setCategories([]);
+                if (result.code !== 200 && result.message) {
+                    throw new Error(result.message || 'Format data kategori tidak valid');
+                }
+            }
+        } catch (err: any) {
+            addNotification(`Gagal memuat kategori: ${err.message}`, 'error');
+            setCategories([]);
+        } finally {
+            setIsLoadingCategories(false);
+        }
+    }, [selectedUnit, selectedOutlet, addNotification]);
 
-    const filteredCategories = useMemo(() => {
-        if (!selectedOutlet) return [];
-        return categories.filter(c => c.outletId === Number(selectedOutlet));
-    }, [categories, selectedOutlet]);
+    useEffect(() => {
+        fetchCategories();
+    }, [fetchCategories]);
+
 
     const handleOpenModal = (category: ProductCategory | null = null) => {
         setEditingCategory(category);
@@ -91,16 +180,72 @@ const ProductCategoryManagement: React.FC = () => {
         setEditingCategory(null);
     };
 
-    const handleSaveCategory = (categoryData: Omit<ProductCategory, 'id' | 'outletId'> | ProductCategory) => {
-        if ('id' in categoryData) {
-            updateCategory(categoryData);
-        } else {
-            if (selectedOutlet) {
-                addCategory({ ...categoryData, outletId: Number(selectedOutlet) });
+    const handleSaveCategory = async (formData: { name: string }) => {
+        try {
+            const isEditing = !!editingCategory;
+            const businessId = Number(selectedUnit);
+
+            if (!businessId || !selectedOutlet) {
+                throw new Error('Silakan pilih Unit Bisnis dan Outlet terlebih dahulu.');
             }
+
+            const url = isEditing ? `${API_ENDPOINT}/${editingCategory.id}` : API_ENDPOINT;
+            const method = isEditing ? 'PUT' : 'POST';
+            const payload: any = {
+                name: formData.name,
+                business_id: businessId,
+                outlet_id: Number(selectedOutlet)
+            };
+            if (isEditing) {
+                payload.id = editingCategory.id;
+            }
+
+            const response = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            const result = await response.json();
+            if (!response.ok) {
+                const errorMessages = result.errors ? Object.values(result.errors).flat().join(' ') : result.message;
+                throw new Error(errorMessages || 'Gagal menyimpan data');
+            }
+            addNotification(`Kategori "${formData.name}" berhasil disimpan.`, 'success');
+            await fetchCategories();
+        } catch (error: any) {
+            addNotification(`Gagal menyimpan: ${error.message}`, 'error');
+            throw error; // Re-throw to keep modal open
         }
     };
     
+     const handleDeleteCategory = (category: ProductCategory) => {
+        setDeletingCategory(category);
+        setIsConfirmModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deletingCategory) return;
+        setIsDeleting(true);
+        try {
+            const response = await fetch(`${API_ENDPOINT}/${deletingCategory.id}`, {
+                method: 'DELETE',
+            });
+            if (!response.ok) {
+                const result = await response.json().catch(() => ({}));
+                throw new Error(result.message || `Gagal menghapus. Status: ${response.status}`);
+            }
+            addNotification(`Kategori "${deletingCategory.name}" berhasil dihapus.`, 'success');
+            await fetchCategories();
+        } catch (error: any) {
+            addNotification(`Gagal menghapus: ${error.message}`, 'error');
+        } finally {
+            setIsDeleting(false);
+            setIsConfirmModalOpen(false);
+            setDeletingCategory(null);
+        }
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -109,21 +254,32 @@ const ProductCategoryManagement: React.FC = () => {
                     <select
                       value={selectedUnit}
                       onChange={(e) => setSelectedUnit(e.target.value)}
+                      disabled={isLoadingUnits || apiBusinessUnits.length === 0}
                       className="w-full sm:w-auto px-4 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
                     >
-                      {businessUnits.map(unit => (
-                        <option key={unit.id} value={unit.id}>{unit.name}</option>
-                      ))}
+                      {isLoadingUnits ? (
+                          <option>Memuat Unit Bisnis...</option>
+                        ) : apiBusinessUnits.length === 0 ? (
+                          <option>Tidak ada Unit Bisnis</option>
+                        ) : (
+                          apiBusinessUnits.map(unit => (
+                            <option key={unit.id} value={unit.id}>{unit.name}</option>
+                          ))
+                        )}
                     </select>
                     <select
                        value={selectedOutlet}
                        onChange={(e) => setSelectedOutlet(e.target.value)}
                        className="w-full sm:w-auto px-4 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-                       disabled={availableOutlets.length === 0}
+                       disabled={!selectedUnit || availableOutlets.length === 0}
                     >
-                       {availableOutlets.map(outlet => (
-                        <option key={outlet.id} value={outlet.id}>{outlet.name}</option>
-                      ))}
+                       {availableOutlets.length > 0 ? (
+                         availableOutlets.map(outlet => (
+                           <option key={outlet.id} value={outlet.id}>{outlet.name}</option>
+                         ))
+                       ) : (
+                         <option>Pilih Unit Bisnis</option>
+                       )}
                     </select>
                  </div>
             </div>
@@ -145,21 +301,25 @@ const ProductCategoryManagement: React.FC = () => {
                         <thead className="bg-slate-50">
                             <tr>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Nama Kategori</th>
+                                <th scope="col" className="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">Jumlah Produk</th>
                                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-slate-200">
-                            {filteredCategories.length > 0 ? filteredCategories.map((category) => (
+                            {isLoadingCategories ? (
+                                <tr><td colSpan={3} className="text-center py-10 text-slate-500">Memuat data kategori...</td></tr>
+                            ) : categories.length > 0 ? categories.map((category) => (
                                 <tr key={category.id}>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{category.name}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 text-center">{category.products_count}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <button onClick={() => handleOpenModal(category)} className="text-red-600 hover:text-red-900 mr-4"><EditIcon className="w-5 h-5"/></button>
-                                        <button onClick={() => deleteCategory(category.id)} className="text-red-600 hover:text-red-900"><TrashIcon className="w-5 h-5"/></button>
+                                        <button onClick={() => handleDeleteCategory(category)} className="text-red-600 hover:text-red-900"><TrashIcon className="w-5 h-5"/></button>
                                     </td>
                                 </tr>
                             )) : (
                                 <tr>
-                                    <td colSpan={2} className="text-center py-10 text-slate-500">
+                                    <td colSpan={3} className="text-center py-10 text-slate-500">
                                         {selectedOutlet ? 'Tidak ada kategori untuk outlet ini.' : 'Silakan pilih unit usaha dan outlet.'}
                                     </td>
                                 </tr>
@@ -170,6 +330,14 @@ const ProductCategoryManagement: React.FC = () => {
             </div>
             
             <CategoryModal isOpen={isModalOpen} onClose={handleCloseModal} onSave={handleSaveCategory} category={editingCategory} />
+            <ConfirmationModal
+                isOpen={isConfirmModalOpen}
+                onClose={() => setIsConfirmModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title="Konfirmasi Hapus"
+                message={`Apakah Anda yakin ingin menghapus kategori "${deletingCategory?.name}"? Aksi ini tidak dapat dibatalkan.`}
+                isLoading={isDeleting}
+            />
         </div>
     );
 };

@@ -1,12 +1,10 @@
 
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNotification } from '../contexts/NotificationContext';
 import CustomerModal from './CustomerModal';
 import { CustomerCategory } from '../types';
 import { PlusIcon, EditIcon, TrashIcon } from './icons/Icons';
 import ConfirmationModal from './ConfirmationModal';
-
 
 // Tipe data lokal untuk respons API
 interface ApiCustomer {
@@ -26,6 +24,7 @@ interface ApiCustomer {
   };
 }
 
+// Tipe data untuk unit bisnis dari API summary
 interface ApiBusinessUnit {
     id: number;
     name: string;
@@ -51,6 +50,33 @@ const CustomerManagement: React.FC = () => {
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [deletingCustomer, setDeletingCustomer] = useState<ApiCustomer | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    // Fetch business units dari API
+    useEffect(() => {
+        const fetchBusinessUnits = async () => {
+            setIsLoading(prev => ({ ...prev, units: true }));
+            try {
+                const response = await fetch(`${API_BASE_URL}/business/summary`);
+                if (!response.ok) throw new Error('Gagal memuat unit bisnis');
+                const result = await response.json();
+                if (result.code === 200 && result.data && Array.isArray(result.data.data)) {
+                    const units: ApiBusinessUnit[] = result.data.data;
+                    setBusinessUnits(units);
+                    if (units.length > 0 && !selectedUnit) {
+                        setSelectedUnit(String(units[0].id));
+                    }
+                } else {
+                    throw new Error(result.message || 'Format data unit bisnis tidak valid');
+                }
+            } catch (err: any) {
+                addNotification(`Gagal memuat data: ${err.message}`, 'error');
+            } finally {
+                setIsLoading(prev => ({ ...prev, units: false }));
+            }
+        };
+        fetchBusinessUnits();
+    }, [addNotification, selectedUnit]);
+
 
     // Fetch customer categories based on selected unit
     const fetchCustomerCategoriesForUnit = useCallback(async () => {
@@ -79,32 +105,6 @@ const CustomerManagement: React.FC = () => {
     useEffect(() => {
         fetchCustomerCategoriesForUnit();
     }, [fetchCustomerCategoriesForUnit]);
-
-    // Mengambil data unit usaha untuk dropdown
-    useEffect(() => {
-        const fetchBusinessUnits = async () => {
-            setIsLoading(prev => ({ ...prev, units: true }));
-            try {
-                const response = await fetch(`${API_BASE_URL}/business/summary`);
-                if (!response.ok) throw new Error('Gagal memuat unit bisnis');
-                const result = await response.json();
-                if (result.code === 200 && result.data && Array.isArray(result.data.data)) {
-                    setBusinessUnits(result.data.data);
-                    if (result.data.data.length > 0) {
-                        setSelectedUnit(String(result.data.data[0].id));
-                    }
-                } else {
-                    throw new Error(result.message || 'Format data unit bisnis tidak valid');
-                }
-            } catch (err: any) {
-                setError(err.message);
-                addNotification(`Gagal memuat unit bisnis: ${err.message}`, 'error');
-            } finally {
-                setIsLoading(prev => ({ ...prev, units: false }));
-            }
-        };
-        fetchBusinessUnits();
-    }, [addNotification]);
     
     // Mengambil data customer ketika unit usaha dipilih
     const fetchCustomers = useCallback(async () => {

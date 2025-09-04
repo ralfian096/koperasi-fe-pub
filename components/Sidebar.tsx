@@ -75,10 +75,7 @@ const Sidebar: React.FC<SidebarProps> = ({ currentView, setCurrentView, onLogout
                 <ul>
                     <NavLink Icon={DashboardIcon} view="dashboard" label="Dasbor" {...{ currentView, setCurrentView }} />
 
-                    <NavGroup label="Manajemen Koperasi" Icon={CooperativeIcon} id="cooperative" {...{ openMenu, setOpenMenu }}>
-                        <NavLink Icon={() => <span className="w-5 mr-4" />} view="cooperative-management" label="Anggota" isSubItem {...{ currentView, setCurrentView }} />
-                        <NavLink Icon={() => <span className="w-5 mr-4" />} view="cooperative-others" label="Lainnya" isSubItem {...{ currentView, setCurrentView }} />
-                    </NavGroup>
+                    <NavLink Icon={CooperativeIcon} view="cooperative-management" label="Anggota Koperasi" {...{ currentView, setCurrentView }} />
 
                     <NavGroup label="Manajemen Usaha" Icon={ProductIcon} id="business" {...{ openMenu, setOpenMenu }}>
                         <NavLink Icon={() => <span className="w-5 mr-4" />} view="business-units" label="Unit Usaha" isSubItem {...{ currentView, setCurrentView }} />

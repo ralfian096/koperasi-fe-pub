@@ -1,5 +1,6 @@
 
-import { useState, useEffect } from 'react';
+
+import { useState, useEffect, useCallback } from 'react';
 import { Product, Transaction, TransactionItem, BusinessUnit, Outlet, Member, Employee, OperationalCost, User, ProductCategory, OperationalCostCategory, Variant, RentalResource, ResourceAvailability, Customer, CustomerCategory } from '../types';
 
 // Mock Data Generators
@@ -15,23 +16,14 @@ const generateInitialOutlets = (units: BusinessUnit[]): Outlet[] => [
   { id: 202, name: 'Sewa Mudah - Jakarta Selatan', businessUnitId: 2 },
 ];
 
-const generateInitialCategories = (outlets: Outlet[]): ProductCategory[] => [
-    { id: 'cat-1', name: 'Kopi Panas', outletId: 101 },
-    { id: 'cat-2', name: 'Kopi Dingin', outletId: 101 },
-    { id: 'cat-3', name: 'Minuman Non-Kopi', outletId: 102 },
-    { id: 'cat-4', name: 'Meja Biliar', outletId: 201 },
-    { id: 'cat-5', name: 'Peralatan Makan', outletId: 201 },
-    { id: 'cat-6', name: 'Tenda & Dekorasi', outletId: 202 },
-];
-
 const generateInitialProducts = (): Product[] => [
   // Barang Products (price is on variant)
-  { id: 'prod-1', name: 'Latte', description: 'Kopi susu klasik dengan foam lembut.', categoryId: 'cat-1', type: 'barang', imageUrl: 'https://picsum.photos/seed/latte/400', outletId: 101 },
-  { id: 'prod-2', name: 'Americano', description: 'Espresso shot dengan tambahan air panas.', categoryId: 'cat-1', type: 'barang', imageUrl: 'https://picsum.photos/seed/americano/400', outletId: 101 },
-  { id: 'prod-3', name: 'Thai Tea', description: 'Teh susu Thailand otentik.', categoryId: 'cat-3', type: 'barang', imageUrl: 'https://picsum.photos/seed/thaitea/400', outletId: 102 },
+  { id: 'prod-1', name: 'Latte', description: 'Kopi susu klasik dengan foam lembut.', categoryId: 1, type: 'barang', imageUrl: 'https://picsum.photos/seed/latte/400', outletId: 101 },
+  { id: 'prod-2', name: 'Americano', description: 'Espresso shot dengan tambahan air panas.', categoryId: 1, type: 'barang', imageUrl: 'https://picsum.photos/seed/americano/400', outletId: 101 },
+  { id: 'prod-3', name: 'Thai Tea', description: 'Teh susu Thailand otentik.', categoryId: 3, type: 'barang', imageUrl: 'https://picsum.photos/seed/thaitea/400', outletId: 102 },
   // Sewa Products (price is on product)
-  { id: 'prod-4', name: 'Sewa Meja Biliar', description: 'Sewa meja biliar standar internasional per jam.', categoryId: 'cat-4', generalPrice: 50000, categoryPrices: [{ categoryId: 'cust-cat-2', price: 45000 }], type: 'sewa', imageUrl: 'https://picsum.photos/seed/billiard/400', outletId: 201 },
-  { id: 'prod-5', name: 'Tenda Roder', description: 'Sewa tenda roder untuk acara besar, harga per hari.', categoryId: 'cat-6', generalPrice: 1500000, categoryPrices: [{ categoryId: 'cust-cat-3', price: 1350000 }], type: 'sewa', imageUrl: 'https://picsum.photos/seed/tent/400', outletId: 202 },
+  { id: 'prod-4', name: 'Sewa Meja Biliar', description: 'Sewa meja biliar standar internasional per jam.', categoryId: 4, generalPrice: 50000, categoryPrices: [{ categoryId: 'cust-cat-2', price: 45000 }], type: 'sewa', imageUrl: 'https://picsum.photos/seed/billiard/400', outletId: 201 },
+  { id: 'prod-5', name: 'Tenda Roder', description: 'Sewa tenda roder untuk acara besar, harga per hari.', categoryId: 6, generalPrice: 1500000, categoryPrices: [{ categoryId: 'cust-cat-3', price: 1350000 }], type: 'sewa', imageUrl: 'https://picsum.photos/seed/tent/400', outletId: 202 },
 ];
 
 const generateInitialVariants = (): Variant[] => [
@@ -210,7 +202,6 @@ function useLocalStorageState<T>(key: string, generator: () => T): [T, React.Dis
 const usePosData = () => {
     const [businessUnits, setBusinessUnits] = useLocalStorageState('pos-businessUnits', generateInitialBusinessUnits);
     const [outlets, setOutlets] = useLocalStorageState('pos-outlets', () => generateInitialOutlets(businessUnits));
-    const [categories, setCategories] = useLocalStorageState('pos-categories', () => generateInitialCategories(outlets));
     const [products, setProducts] = useLocalStorageState('pos-products', generateInitialProducts);
     
     // New states for complex products
@@ -231,6 +222,50 @@ const usePosData = () => {
     const [customers, setCustomers] = useLocalStorageState('pos-customers', () => generateInitialCustomers(businessUnits, customerCategories));
 
     const [transactions, setTransactions] = useLocalStorageState('pos-transactions', () => generateInitialTransactions(products, variants, outlets, customers));
+
+    // Product Categories from API
+    const [categories, setCategories] = useState<ProductCategory[]>([]);
+    const refetchCategories = useCallback(async () => {
+        if (businessUnits.length === 0) {
+            setCategories([]);
+            return;
+        }
+        try {
+            const categoryPromises = businessUnits.map(unit =>
+                fetch(`https://api.majukoperasiku.my.id/manage/product-categories?business_id=${unit.id}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            console.error(`Gagal mengambil kategori untuk unit bisnis ${unit.id}`);
+                            return null;
+                        }
+                        return response.json();
+                    })
+            );
+
+            const results = await Promise.all(categoryPromises);
+
+            const allCategories = results
+                .filter(result => result !== null)
+                .flatMap(result => {
+                    if (result.code === 200 && result.data && Array.isArray(result.data.data)) {
+                        return result.data.data;
+                    }
+                    return [];
+                });
+            
+            const uniqueCategories = Array.from(new Map(allCategories.map(cat => [cat.id, cat])).values());
+            setCategories(uniqueCategories);
+
+        } catch (error) {
+            console.error("Error fetching product categories:", error);
+            setCategories([]);
+        }
+    }, [businessUnits]);
+
+    useEffect(() => {
+        refetchCategories();
+    }, [refetchCategories]);
+
 
     // Business Unit CRUD
     const addBusinessUnit = (unit: Omit<BusinessUnit, 'id'>) => {
@@ -258,7 +293,7 @@ const usePosData = () => {
         const productsToDelete = products.filter(p => p.outletId === outletId);
         productsToDelete.forEach(p => deleteProduct(p.id)); // Cascading delete for products
         
-        setCategories(prev => prev.filter(c => c.outletId !== outletId));
+        // setCategories(prev => prev.filter(c => c.outlet_id !== outletId));
         setTransactions(prev => prev.filter(t => t.outletId !== outletId));
         setOperationalCosts(prev => prev.filter(c => c.outletId !== outletId));
         setEmployees(prev => prev.filter(e => e.outletId !== outletId));
@@ -337,16 +372,6 @@ const usePosData = () => {
     };
     
     // Other CRUDs...
-    const addCategory = (category: Omit<ProductCategory, 'id'>) => {
-        const newCategory: ProductCategory = { ...category, id: `cat-${Date.now()}` };
-        setCategories(prev => [...prev, newCategory]);
-    };
-    const updateCategory = (updatedCategory: ProductCategory) => {
-        setCategories(prev => prev.map(c => c.id === updatedCategory.id ? updatedCategory : c));
-    };
-    const deleteCategory = (categoryId: string) => {
-        setCategories(prev => prev.filter(c => c.id !== categoryId));
-    };
     const addOperationalCost = (cost: Omit<OperationalCost, 'id'>) => {
         const newCost: OperationalCost = { ...cost, id: `cost-${Date.now()}` };
         setOperationalCosts(prev => [...prev, newCost]);
@@ -407,10 +432,10 @@ const usePosData = () => {
         businessUnits, outlets, products, transactions, members, employees, operationalCostCategories, operationalCosts, users, categories, 
         variants, rentalResources, resourceAvailabilities,
         customerCategories, customers,
+        refetchCategories,
         addBusinessUnit, updateBusinessUnit, deleteBusinessUnit,
         addOutlet, updateOutlet, deleteOutlet,
         addProduct, updateProduct, deleteProduct, 
-        addCategory, updateCategory, deleteCategory,
         addOperationalCost, updateOperationalCost, deleteOperationalCost,
         addOperationalCostCategory, updateOperationalCostCategory, deleteOperationalCostCategory,
         addMember, updateMember, deleteMember,

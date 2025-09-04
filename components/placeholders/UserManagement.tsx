@@ -8,6 +8,9 @@ const UserManagement: React.FC = () => {
                 Sebagai admin, Anda dapat mengelola akun pengguna yang memiliki akses ke sistem back-office ini.
                 Anda akan dapat membuat pengguna baru, menetapkan peran, dan mengatur hak akses untuk setiap menu.
             </p>
+             <p className="text-slate-800 font-medium mt-4">
+                Ya, lakukan perubahannya
+            </p>
             <div className="mt-6 p-4 border-l-4 border-red-500 bg-red-50">
                 <p className="font-semibold text-red-800">Fitur yang Direncanakan:</p>
                 <ul className="list-disc list-inside text-red-700 mt-2">

@@ -25,9 +25,19 @@ export interface Outlet {
 }
 
 export interface ProductCategory {
-  id: string;
+  id: number;
+  business_id: number;
+  outlet_id: number;
   name: string;
-  outletId: number;
+  products_count: number;
+  business: {
+      id: number;
+      name: string;
+  };
+  outlet: {
+      id: number;
+      name: string;
+  };
 }
 
 // New Product-related interfaces for advanced features
@@ -66,7 +76,7 @@ export interface Product {
   id: string;
   name: string;
   description: string;
-  categoryId: string;
+  categoryId: number;
   // Price is now based on general and customer categories.
   // Optional at top level for 'barang', required for 'sewa'.
   generalPrice?: number;

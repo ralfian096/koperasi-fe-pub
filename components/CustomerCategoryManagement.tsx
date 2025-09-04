@@ -5,11 +5,6 @@ import { useNotification } from '../contexts/NotificationContext';
 import ConfirmationModal from './ConfirmationModal';
 
 // Tipe data lokal untuk respons API
-interface ApiBusinessUnit {
-  id: number;
-  name: string;
-}
-
 interface ApiCustomerCategory {
   id: number;
   business_id: number;
@@ -22,8 +17,14 @@ interface ApiCustomerCategory {
   };
 }
 
-const API_BUSINESS_SUMMARY_ENDPOINT = 'https://api.majukoperasiku.my.id/manage/business/summary';
+// Tipe data untuk unit bisnis dari API summary
+interface ApiBusinessUnit {
+    id: number;
+    name: string;
+}
+
 const API_CUSTOMER_CATEGORY_ENDPOINT = 'https://api.majukoperasiku.my.id/manage/customer-category';
+const API_BUSINESS_SUMMARY_ENDPOINT = 'https://api.majukoperasiku.my.id/manage/business/summary';
 
 
 // Modal Component
@@ -100,7 +101,8 @@ const CustomerCategoryManagement: React.FC = () => {
     const [customerCategories, setCustomerCategories] = useState<ApiCustomerCategory[]>([]);
     
     const [selectedUnit, setSelectedUnit] = useState<string>('');
-    const [isLoading, setIsLoading] = useState({ units: true, categories: false });
+    const [isLoadingUnits, setIsLoadingUnits] = useState(true);
+    const [isLoadingCategories, setIsLoadingCategories] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<ApiCustomerCategory | null>(null);
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -109,35 +111,35 @@ const CustomerCategoryManagement: React.FC = () => {
 
     useEffect(() => {
         const fetchBusinessUnits = async () => {
-            setIsLoading(prev => ({ ...prev, units: true }));
+            setIsLoadingUnits(true);
             try {
                 const response = await fetch(API_BUSINESS_SUMMARY_ENDPOINT);
                 if (!response.ok) throw new Error('Gagal memuat unit bisnis');
                 const result = await response.json();
                 if (result.code === 200 && result.data && Array.isArray(result.data.data)) {
-                    const units = result.data.data.map((u: any) => ({ id: u.id, name: u.name }));
+                    const units: ApiBusinessUnit[] = result.data.data;
                     setBusinessUnits(units);
-                    if (units.length > 0) {
+                    if (units.length > 0 && !selectedUnit) {
                         setSelectedUnit(String(units[0].id));
                     }
                 } else {
                     throw new Error(result.message || 'Format data unit bisnis tidak valid');
                 }
             } catch (err: any) {
-                addNotification(`Gagal memuat unit bisnis: ${err.message}`, 'error');
+                addNotification(`Gagal memuat data: ${err.message}`, 'error');
             } finally {
-                setIsLoading(prev => ({ ...prev, units: false }));
+                setIsLoadingUnits(false);
             }
         };
         fetchBusinessUnits();
-    }, [addNotification]);
+    }, [addNotification, selectedUnit]);
     
     const fetchCustomerCategories = useCallback(async () => {
         if (!selectedUnit) {
             setCustomerCategories([]);
             return;
         }
-        setIsLoading(prev => ({ ...prev, categories: true }));
+        setIsLoadingCategories(true);
         try {
             const response = await fetch(`${API_CUSTOMER_CATEGORY_ENDPOINT}?business_id=${selectedUnit}`);
             if (!response.ok) throw new Error('Gagal memuat kategori customer');
@@ -153,7 +155,7 @@ const CustomerCategoryManagement: React.FC = () => {
             addNotification(`Gagal memuat kategori: ${err.message}`, 'error');
             setCustomerCategories([]);
         } finally {
-            setIsLoading(prev => ({ ...prev, categories: false }));
+            setIsLoadingCategories(false);
         }
     }, [selectedUnit, addNotification]);
 
@@ -237,10 +239,10 @@ const CustomerCategoryManagement: React.FC = () => {
                     value={selectedUnit} 
                     onChange={(e) => setSelectedUnit(e.target.value)} 
                     className="w-full sm:w-64 px-4 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-                    disabled={isLoading.units || businessUnits.length === 0}
+                    disabled={isLoadingUnits || businessUnits.length === 0}
                 >
-                    {isLoading.units ? (
-                      <option>Memuat unit bisnis...</option>
+                    {isLoadingUnits ? (
+                        <option>Memuat Unit Bisnis...</option>
                     ) : businessUnits.length === 0 ? (
                       <option>Tidak ada unit bisnis</option>
                     ) : (
@@ -272,7 +274,7 @@ const CustomerCategoryManagement: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-slate-200">
-                            {isLoading.categories ? (
+                            {isLoadingCategories ? (
                                 <tr><td colSpan={4} className="text-center py-10 text-slate-500">Memuat data...</td></tr>
                             ) : customerCategories.length > 0 ? customerCategories.map((category) => (
                                 <tr key={category.id}>

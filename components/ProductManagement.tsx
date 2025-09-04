@@ -32,7 +32,7 @@ const ProductModal: React.FC<{
   const [formData, setFormData] = useState<ProductFormData>({
     name: '',
     description: '',
-    categoryId: '',
+    categoryId: 0,
     type: 'barang',
     outletId: 0,
     generalPrice: 0,
@@ -45,7 +45,7 @@ const ProductModal: React.FC<{
 
   // Memoized data for performance
   const relevantCategories = useMemo(() => {
-    return allData.categories.filter(c => c.outletId === formData.outletId);
+    return allData.categories.filter(c => c.outlet_id === formData.outletId);
   }, [allData.categories, formData.outletId]);
 
   // Effect to populate form when editing
@@ -54,12 +54,12 @@ const ProductModal: React.FC<{
       const currentOutletId = product?.outletId || outletForNewProduct;
       if (!currentOutletId) return;
 
-      const initialCategories = allData.categories.filter(c => c.outletId === currentOutletId);
+      const initialCategories = allData.categories.filter(c => c.outlet_id === currentOutletId);
       
       const baseData: ProductFormData = {
         name: product?.name || '',
         description: product?.description || '',
-        categoryId: product?.categoryId || (initialCategories[0]?.id || ''),
+        categoryId: product?.categoryId || (initialCategories[0]?.id || 0),
         type: product?.type || 'barang',
         outletId: currentOutletId,
         generalPrice: product?.generalPrice || 0,
@@ -205,7 +205,7 @@ const ProductModal: React.FC<{
           {/* Core Info */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <input type="text" value={formData.name} onChange={e => setFormData(p => ({...p, name: e.target.value}))} placeholder="Nama Produk" required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"/>
-            <select name="categoryId" value={formData.categoryId} onChange={e => setFormData(p => ({...p, categoryId: e.target.value}))} required disabled={relevantCategories.length === 0} className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 disabled:bg-slate-100">
+            <select name="categoryId" value={formData.categoryId} onChange={e => setFormData(p => ({...p, categoryId: Number(e.target.value)}))} required disabled={relevantCategories.length === 0} className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 disabled:bg-slate-100">
                 {relevantCategories.length > 0 ? relevantCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>) : <option>Pilih Outlet dulu</option>}
             </select>
           </div>
