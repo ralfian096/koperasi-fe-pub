@@ -1,398 +1,499 @@
-
-import React, { useState, useMemo, useEffect } from 'react';
-import usePosData from '../hooks/usePosData';
-import { Product, Outlet, ProductCategory, Variant, RentalResource, ResourceAvailability, CustomerCategory, CategoryPrice } from '../types';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { EditIcon, TrashIcon, PlusIcon } from './icons/Icons';
+import { useNotification } from '../contexts/NotificationContext';
+import ConfirmationModal from './ConfirmationModal';
 
-// Form Data Types
-type CategoryPriceFormData = Omit<CategoryPrice, ''>;
-type ProductFormData = Omit<Product, 'id' | 'imageUrl'>;
-type VariantFormData = Omit<Variant, 'id' | 'productId'>;
-type AvailabilityFormData = Omit<ResourceAvailability, 'id' | 'resourceId'>;
-type ResourceFormData = Omit<RentalResource, 'id' | 'productId'> & { availabilities: AvailabilityFormData[] };
+// --- API Endpoints ---
+const API_BASE_URL = 'https://api.majukoperasiku.my.id/manage';
+const API_BUSINESS_SUMMARY_ENDPOINT = `${API_BASE_URL}/business/summary`;
+const API_OUTLETS_ENDPOINT = `${API_BASE_URL}/outlets`;
+const API_PRODUCTS_ENDPOINT = `${API_BASE_URL}/products`;
+const API_PRODUCT_CATEGORIES_ENDPOINT = `${API_BASE_URL}/product-categories`;
+const API_CUSTOMER_CATEGORIES_ENDPOINT = `${API_BASE_URL}/customer-category`;
+const API_UNITS_ENDPOINT = `${API_BASE_URL}/units`;
 
-const ProductModal: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (product: ProductFormData | Product, variants: VariantFormData[], resources: ResourceFormData[]) => void;
-  product: Product | null;
-  // Pass all data from hook
-  allData: {
-    outlets: Outlet[];
-    categories: ProductCategory[];
-    variants: Variant[];
-    rentalResources: RentalResource[];
-    resourceAvailabilities: ResourceAvailability[];
-    customerCategories: CustomerCategory[];
-  };
-  outletForNewProduct: number | '';
-}> = ({ isOpen, onClose, onSave, product, allData, outletForNewProduct }) => {
-  
-  // State for the form
-  const [formData, setFormData] = useState<ProductFormData>({
+
+// --- Type Definitions for API data ---
+interface ApiBusinessUnit {
+    id: number;
+    name: string;
+    outlets: { id: number; name: string }[];
+}
+
+interface ApiProductCategory { id: number; name: string; }
+interface ApiCustomerCategory { id: number; name: string; }
+interface ApiUnit { unit_id: number; name: string; type: string; }
+interface ApiOutlet { id: number; name: string; }
+
+interface ApiProduct {
+    id: number;
+    name: string;
+    product_type: 'CONSUMPTION' | 'RENTAL';
+    category: { id: number; name: string; } | null;
+    variants: any[]; // Simplified for list view
+    resources: any[]; // Simplified for list view
+    outlet?: { id: number; name: string }; // Optional for list view
+}
+
+// --- Local State Types for Form ---
+type PricingRule = { key: number; customer_category_id: string; price: string; unit_id: string };
+type AvailabilityRule = { key: number; day_of_week: string; start_time: string; end_time: string };
+type Variant = { key: number; name: string; sku: string; stock_quantity: string; pricing: PricingRule[]; };
+type Resource = { key: number; name: string; availability: AvailabilityRule[]; pricing: PricingRule[]; };
+
+const initialFormState = {
+    business_id: '',
     name: '',
     description: '',
-    categoryId: 0,
-    type: 'barang',
-    outletId: 0,
-    generalPrice: 0,
-    categoryPrices: []
-  });
-  const [variants, setVariants] = useState<VariantFormData[]>([{ name: '', sku: '', generalPrice: 0, categoryPrices: [], stock: 0 }]);
-  const [resources, setResources] = useState<ResourceFormData[]>([{ name: '', code: '', availabilities: [] }]);
-
-  const weekDays: ResourceAvailability['dayOfWeek'][] = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-
-  // Memoized data for performance
-  const relevantCategories = useMemo(() => {
-    return allData.categories.filter(c => c.outlet_id === formData.outletId);
-  }, [allData.categories, formData.outletId]);
-
-  // Effect to populate form when editing
-  useEffect(() => {
-    if (isOpen) {
-      const currentOutletId = product?.outletId || outletForNewProduct;
-      if (!currentOutletId) return;
-
-      const initialCategories = allData.categories.filter(c => c.outlet_id === currentOutletId);
-      
-      const baseData: ProductFormData = {
-        name: product?.name || '',
-        description: product?.description || '',
-        categoryId: product?.categoryId || (initialCategories[0]?.id || 0),
-        type: product?.type || 'barang',
-        outletId: currentOutletId,
-        generalPrice: product?.generalPrice || 0,
-        categoryPrices: product?.categoryPrices || [],
-      };
-      setFormData(baseData);
-      
-      if (product) {
-        if (product.type === 'barang') {
-          const productVariants = allData.variants.filter(v => v.productId === product.id)
-            .map(({ id, productId, ...rest }) => rest);
-          setVariants(productVariants.length > 0 ? productVariants : [{ name: '', sku: '', generalPrice: 0, categoryPrices: [], stock: 0 }]);
-        } else if (product.type === 'sewa') {
-          const productResources = allData.rentalResources.filter(r => r.productId === product.id);
-          const productResourcesData = productResources.map(res => {
-            const availabilities = allData.resourceAvailabilities.filter(a => a.resourceId === res.id)
-                .map(({id, resourceId, ...rest}) => rest);
-            return { name: res.name, code: res.code, availabilities };
-          });
-          setResources(productResourcesData.length > 0 ? productResourcesData : [{ name: '', code: '', availabilities: [] }]);
-        }
-      } else {
-        // Reset for new product
-        setVariants([{ name: '', sku: '', generalPrice: 0, categoryPrices: [], stock: 0 }]);
-        setResources([{ name: '', code: '', availabilities: [] }]);
-      }
-    }
-  }, [product, allData, isOpen, outletForNewProduct]);
-
-  if (!isOpen) return null;
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const finalProductData = { ...formData };
-    if(finalProductData.type === 'barang') {
-        delete finalProductData.generalPrice;
-        delete finalProductData.categoryPrices;
-    }
-
-    if (product) {
-      onSave({ ...product, ...finalProductData }, variants, resources);
-    } else {
-      onSave(finalProductData, variants, resources);
-    }
-    onClose();
-  };
-  
-  // --- Variant Handlers ---
-  const handleVariantChange = (index: number, field: keyof VariantFormData, value: any) => {
-    const newVariants = [...variants];
-    (newVariants[index] as any)[field] = value;
-    setVariants(newVariants);
-  };
-  const addVariant = () => setVariants([...variants, { name: '', sku: '', generalPrice: 0, categoryPrices: [], stock: 0 }]);
-  const removeVariant = (index: number) => setVariants(variants.filter((_, i) => i !== index));
-
-  // --- Category Price Handlers (for Variant) ---
-  const handleVariantCategoryPriceChange = (vIndex: number, pIndex: number, field: 'categoryId' | 'price', value: string | number) => {
-      const newVariants = [...variants];
-      // FIX: The underlying type mismatch is resolved in `types.ts`, so the `as any` cast is no longer necessary for type safety.
-      newVariants[vIndex].categoryPrices[pIndex][field] = value as any;
-      setVariants(newVariants);
-  };
-  const addVariantCategoryPrice = (vIndex: number) => {
-      const newVariants = [...variants];
-      const availableCats = allData.customerCategories.filter(
-          c => !newVariants[vIndex].categoryPrices.some(p => p.categoryId === c.id)
-      );
-      if (availableCats.length > 0) {
-          newVariants[vIndex].categoryPrices.push({ categoryId: availableCats[0].id, price: 0 });
-          setVariants(newVariants);
-      }
-  };
-  const removeVariantCategoryPrice = (vIndex: number, pIndex: number) => {
-      const newVariants = [...variants];
-      newVariants[vIndex].categoryPrices.splice(pIndex, 1);
-      setVariants(newVariants);
-  };
-
-  // --- Category Price Handlers (for Product 'sewa') ---
-    const handleProductCategoryPriceChange = (pIndex: number, field: 'categoryId' | 'price', value: string | number) => {
-      const newPrices = [...(formData.categoryPrices || [])];
-      // FIX: The underlying type mismatch is resolved in `types.ts`, so the `as any` cast is no longer necessary for type safety.
-      newPrices[pIndex][field] = value as any;
-      setFormData(f => ({...f, categoryPrices: newPrices}));
-  };
-  const addProductCategoryPrice = () => {
-      const newPrices = [...(formData.categoryPrices || [])];
-      const availableCats = allData.customerCategories.filter(
-          c => !newPrices.some(p => p.categoryId === c.id)
-      );
-      if (availableCats.length > 0) {
-          newPrices.push({ categoryId: availableCats[0].id, price: 0 });
-          setFormData(f => ({...f, categoryPrices: newPrices}));
-      }
-  };
-  const removeProductCategoryPrice = (pIndex: number) => {
-      const newPrices = [...(formData.categoryPrices || [])];
-      newPrices.splice(pIndex, 1);
-      setFormData(f => ({...f, categoryPrices: newPrices}));
-  };
-
-  // --- Resource Handlers ---
-  const handleResourceChange = (index: number, field: 'name' | 'code', value: string) => {
-    const newResources = [...resources];
-    newResources[index] = { ...newResources[index], [field]: value };
-    setResources(newResources);
-  };
-  const addResource = () => setResources([...resources, { name: '', code: '', availabilities: [] }]);
-  const removeResource = (index: number) => setResources(resources.filter((_, i) => i !== index));
-  const handleAvailabilityToggle = (resIndex: number, day: ResourceAvailability['dayOfWeek']) => {
-    const newResources = [...resources];
-    const resource = newResources[resIndex];
-    const existingAvail = resource.availabilities.find(a => a.dayOfWeek === day);
-
-    if (existingAvail) {
-        resource.availabilities = resource.availabilities.filter(a => a.dayOfWeek !== day);
-    } else {
-        resource.availabilities.push({ dayOfWeek: day, startTime: '09:00', endTime: '17:00' });
-        resource.availabilities.sort((a,b) => weekDays.indexOf(a.dayOfWeek) - weekDays.indexOf(b.dayOfWeek));
-    }
-    setResources(newResources);
-  };
-  const handleTimeChange = (resIndex: number, day: ResourceAvailability['dayOfWeek'], type: 'startTime' | 'endTime', value: string) => {
-      const newResources = [...resources];
-      const avail = newResources[resIndex].availabilities.find(a => a.dayOfWeek === day);
-      if (avail) {
-          avail[type] = value;
-          setResources(newResources);
-      }
-  };
-
-  const getAvailableCustomerCategories = (existingPrices: CategoryPriceFormData[] = []) => {
-      const usedCategoryIds = new Set(existingPrices.map(p => p.categoryId));
-      return allData.customerCategories.filter(c => !usedCategoryIds.has(c.id));
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 overflow-y-auto py-10">
-      <div className="bg-white rounded-lg shadow-xl p-6 md:p-8 w-full max-w-3xl max-h-full overflow-y-auto">
-        <h2 className="text-2xl font-bold mb-6 text-slate-800">{product ? 'Ubah Produk' : 'Tambah Produk Baru'}</h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Core Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input type="text" value={formData.name} onChange={e => setFormData(p => ({...p, name: e.target.value}))} placeholder="Nama Produk" required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"/>
-            <select name="categoryId" value={formData.categoryId} onChange={e => setFormData(p => ({...p, categoryId: Number(e.target.value)}))} required disabled={relevantCategories.length === 0} className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 disabled:bg-slate-100">
-                {relevantCategories.length > 0 ? relevantCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>) : <option>Pilih Outlet dulu</option>}
-            </select>
-          </div>
-          <textarea value={formData.description} onChange={e => setFormData(p => ({...p, description: e.target.value}))} placeholder="Deskripsi Produk" required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500" rows={2}/>
-          
-          {/* Type Selector */}
-          <div className="flex rounded-md shadow-sm">
-              <button type="button" onClick={() => setFormData(p=>({...p, type: 'barang'}))} disabled={!!product} className={`px-4 py-2 border rounded-l-md w-1/2 ${formData.type === 'barang' ? 'bg-red-600 text-white' : 'bg-white hover:bg-slate-50'} disabled:opacity-50`}>Produk Barang</button>
-              <button type="button" onClick={() => setFormData(p=>({...p, type: 'sewa'}))} disabled={!!product} className={`px-4 py-2 border rounded-r-md w-1/2 ${formData.type === 'sewa' ? 'bg-red-600 text-white' : 'bg-white hover:bg-slate-50'} disabled:opacity-50`}>Produk Sewa</button>
-          </div>
-
-          {/* Dynamic Section */}
-          {formData.type === 'barang' ? (
-            <div className="space-y-4 p-4 border rounded-md">
-                <h3 className="font-semibold text-slate-700">Varian, Harga & Stok</h3>
-                <div className="space-y-3">
-                  {variants.map((variant, vIndex) => (
-                      <div key={vIndex} className="p-3 border rounded bg-slate-50 space-y-3">
-                          <div className="flex items-center gap-2">
-                              <input type="text" placeholder="Nama Varian (e.g. Merah, XL)" value={variant.name} onChange={e => handleVariantChange(vIndex, 'name', e.target.value)} required className="w-full px-2 py-1 border border-slate-300 rounded-md text-sm"/>
-                              <input type="text" placeholder="SKU" value={variant.sku} onChange={e => handleVariantChange(vIndex, 'sku', e.target.value)} required className="w-1/2 px-2 py-1 border border-slate-300 rounded-md text-sm"/>
-                              <input type="number" placeholder="Stok" value={variant.stock} onChange={e => handleVariantChange(vIndex, 'stock', Number(e.target.value))} required className="w-1/4 px-2 py-1 border border-slate-300 rounded-md text-sm"/>
-                              <button type="button" onClick={() => removeVariant(vIndex)} className="text-red-500 hover:text-red-700 disabled:opacity-50" disabled={variants.length <= 1}><TrashIcon className="w-5 h-5"/></button>
-                          </div>
-                          <div>
-                              <label className="text-xs font-medium text-slate-600">Harga Umum (Rp)</label>
-                              <input type="number" placeholder="Harga Umum" value={variant.generalPrice} onChange={e => handleVariantChange(vIndex, 'generalPrice', Number(e.target.value))} required className="w-full px-2 py-1 border border-slate-300 rounded-md text-sm"/>
-                          </div>
-                          <div>
-                            <p className="text-xs font-medium text-slate-600 mb-1">Harga Khusus per Kategori</p>
-                            {variant.categoryPrices.map((p, pIndex) => (
-                                <div key={pIndex} className="flex items-center gap-2 mb-1">
-                                    <select value={String(p.categoryId)} onChange={e => handleVariantCategoryPriceChange(vIndex, pIndex, 'categoryId', e.target.value)} className="w-full px-2 py-1 border border-slate-300 rounded-md text-sm">
-                                        <option value={p.categoryId}>{allData.customerCategories.find(c => c.id === p.categoryId)?.name}</option>
-                                        {getAvailableCustomerCategories(variant.categoryPrices).map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
-                                    </select>
-                                    <input type="number" placeholder="Harga" value={p.price} onChange={e => handleVariantCategoryPriceChange(vIndex, pIndex, 'price', Number(e.target.value))} required className="w-full px-2 py-1 border border-slate-300 rounded-md text-sm"/>
-                                    <button type="button" onClick={() => removeVariantCategoryPrice(vIndex, pIndex)} className="text-red-500 hover:text-red-700"><TrashIcon className="w-4 h-4"/></button>
-                                </div>
-                            ))}
-                            <button type="button" onClick={() => addVariantCategoryPrice(vIndex)} className="text-xs text-red-600 hover:text-red-800 font-semibold flex items-center gap-1 mt-1" disabled={getAvailableCustomerCategories(variant.categoryPrices).length === 0}><PlusIcon className="w-3 h-3"/> Tambah Harga Kategori</button>
-                          </div>
-                      </div>
-                  ))}
-                </div>
-                <button type="button" onClick={addVariant} className="text-sm text-red-600 hover:text-red-800 font-semibold flex items-center gap-1"><PlusIcon className="w-4 h-4"/> Tambah Varian</button>
-            </div>
-          ) : ( // SEWA
-            <div className="space-y-4 p-4 border rounded-md">
-                <h3 className="font-semibold text-slate-700">Harga & Sumber Daya Sewa</h3>
-                <div>
-                    <label className="text-sm font-medium text-slate-600">Harga Umum / Jam (Rp)</label>
-                    <input type="number" value={formData.generalPrice} onChange={e => setFormData(p => ({...p, generalPrice: Number(e.target.value)}))} placeholder="Harga Umum / jam" required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"/>
-                </div>
-                <div>
-                    <p className="text-sm font-medium text-slate-600 mb-1">Harga Khusus per Kategori</p>
-                    {formData.categoryPrices?.map((p, pIndex) => (
-                        <div key={pIndex} className="flex items-center gap-2 mb-2">
-                            <select value={String(p.categoryId)} onChange={e => handleProductCategoryPriceChange(pIndex, 'categoryId', e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm">
-                                <option value={p.categoryId}>{allData.customerCategories.find(c => c.id === p.categoryId)?.name}</option>
-                                {getAvailableCustomerCategories(formData.categoryPrices).map(c => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
-                            </select>
-                            <input type="number" placeholder="Harga" value={p.price} onChange={e => handleProductCategoryPriceChange(pIndex, 'price', Number(e.target.value))} required className="w-full px-3 py-2 border border-slate-300 rounded-md text-sm"/>
-                            <button type="button" onClick={() => removeProductCategoryPrice(pIndex)} className="text-red-500 hover:text-red-700"><TrashIcon className="w-5 h-5"/></button>
-                        </div>
-                    ))}
-                    <button type="button" onClick={addProductCategoryPrice} className="text-sm text-red-600 hover:text-red-800 font-semibold flex items-center gap-1" disabled={getAvailableCustomerCategories(formData.categoryPrices).length === 0}><PlusIcon className="w-4 h-4"/> Tambah Harga Kategori</button>
-                </div>
-                <hr/>
-                <h3 className="font-semibold text-slate-700 pt-2">Sumber Daya</h3>
-                <div className="space-y-3">
-                  {resources.map((res, resIndex) => (
-                      <div key={resIndex} className="p-3 border rounded bg-slate-50 space-y-2">
-                        <div className="flex items-center gap-2">
-                            <input type="text" placeholder="Nama Resource (e.g. Meja 1)" value={res.name} onChange={e => handleResourceChange(resIndex, 'name', e.target.value)} required className="w-full px-2 py-1 border border-slate-300 rounded-md text-sm"/>
-                            <input type="text" placeholder="Kode Resource" value={res.code} onChange={e => handleResourceChange(resIndex, 'code', e.target.value)} required className="w-1/2 px-2 py-1 border border-slate-300 rounded-md text-sm"/>
-                            <button type="button" onClick={() => removeResource(resIndex)} className="text-red-500 hover:text-red-700 disabled:opacity-50" disabled={resources.length <= 1}><TrashIcon className="w-5 h-5"/></button>
-                        </div>
-                        <div>
-                            <p className="text-xs font-medium text-slate-600 mb-2">Ketersediaan Waktu:</p>
-                            <div className="flex flex-wrap gap-1 mb-2">
-                                {weekDays.map(day => (
-                                    <button type="button" key={day} onClick={() => handleAvailabilityToggle(resIndex, day)} className={`px-2 py-0.5 text-xs border rounded-full ${res.availabilities.some(a => a.dayOfWeek === day) ? 'bg-red-600 text-white border-red-600' : 'bg-white hover:bg-slate-100'}`}>{day}</button>
-                                ))}
-                            </div>
-                            {res.availabilities.map(avail => (
-                                <div key={avail.dayOfWeek} className="flex items-center gap-2 mt-1">
-                                    <span className="w-12 text-xs font-semibold">{avail.dayOfWeek}</span>
-                                    <input type="time" value={avail.startTime} onChange={e => handleTimeChange(resIndex, avail.dayOfWeek, 'startTime', e.target.value)} className="w-full px-2 py-1 border border-slate-300 rounded-md text-sm"/>
-                                    <input type="time" value={avail.endTime} onChange={e => handleTimeChange(resIndex, avail.dayOfWeek, 'endTime', e.target.value)} className="w-full px-2 py-1 border border-slate-300 rounded-md text-sm"/>
-                                </div>
-                            ))}
-                        </div>
-                      </div>
-                  ))}
-                </div>
-                <button type="button" onClick={addResource} className="text-sm text-red-600 hover:text-red-800 font-semibold flex items-center gap-1"><PlusIcon className="w-4 h-4"/> Tambah Resource</button>
-            </div>
-          )}
-
-          <div className="mt-8 flex justify-end space-x-3">
-            <button type="button" onClick={onClose} className="px-4 py-2 bg-slate-200 text-slate-800 rounded-md hover:bg-slate-300">Batal</button>
-            <button type="submit" className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Simpan</button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
+    product_type: 'CONSUMPTION' as 'CONSUMPTION' | 'RENTAL',
+    category_id: '',
+    variants: [{ key: Date.now(), name: '', sku: '', stock_quantity: '', pricing: [{ key: Date.now(), customer_category_id: '', unit_id: '', price: '' }] }],
+    resources: [],
 };
 
-const ProductManagement: React.FC = () => {
-    const data = usePosData();
-    const { businessUnits, products, outlets, categories, variants, rentalResources, resourceAvailabilities, customerCategories, addProduct, updateProduct, deleteProduct } = data;
-    const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+
+const ProductModal: React.FC<{
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: () => void;
+    businessUnitId: string;
+}> = ({ isOpen, onClose, onSave, businessUnitId }) => {
     
-    const [selectedUnit, setSelectedUnit] = useState<string>(String(businessUnits[0]?.id || ''));
+    const { addNotification } = useNotification();
+    const [isLoading, setIsLoading] = useState(false);
+    const [formState, setFormState] = useState(() => ({...initialFormState, business_id: businessUnitId}));
+    
+    // Dropdown data states
+    const [productCategories, setProductCategories] = useState<ApiProductCategory[]>([]);
+    const [customerCategories, setCustomerCategories] = useState<ApiCustomerCategory[]>([]);
+    const [units, setUnits] = useState<ApiUnit[]>([]);
+    const [outletsForBusiness, setOutletsForBusiness] = useState<ApiOutlet[]>([]);
+    const [outletForCategory, setOutletForCategory] = useState('');
+
+    const daysOfWeek = [
+        { value: '1', label: 'Senin' }, { value: '2', label: 'Selasa' }, { value: '3', label: 'Rabu' },
+        { value: '4', label: 'Kamis' }, { value: '5', label: 'Jumat' }, { value: '6', label: 'Sabtu' },
+        { value: '0', label: 'Minggu' },
+    ];
+
+    // Fetch dependent data on modal open
+    useEffect(() => {
+        if (!isOpen || !businessUnitId) return;
+
+        const fetchDependencies = async () => {
+             setIsLoading(true);
+            try {
+                const [custCatRes, unitRes, outletsRes] = await Promise.all([
+                    fetch(`${API_CUSTOMER_CATEGORIES_ENDPOINT}?business_id=${businessUnitId}`),
+                    fetch(API_UNITS_ENDPOINT),
+                    fetch(`${API_OUTLETS_ENDPOINT}?business_id=${businessUnitId}`),
+                ]);
+
+                const custCatResult = await custCatRes.json();
+                setCustomerCategories(custCatResult.data?.data || []);
+
+                const unitResult = await unitRes.json();
+                setUnits(unitResult.data?.data || []);
+                
+                const outletsResult = await outletsRes.json();
+                const fetchedOutlets = outletsResult.data?.data || [];
+                setOutletsForBusiness(fetchedOutlets);
+                if (fetchedOutlets.length > 0) {
+                    setOutletForCategory(String(fetchedOutlets[0].id));
+                }
+
+            } catch (err: any) {
+                addNotification(`Gagal memuat data pendukung: ${err.message}`, 'error');
+                onClose();
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchDependencies();
+    }, [isOpen, businessUnitId, addNotification, onClose]);
+
+    // Fetch product categories when the selected outlet for categories changes
+    useEffect(() => {
+        if (!outletForCategory) {
+            setProductCategories([]);
+            return;
+        }
+        const fetchCategories = async () => {
+            try {
+                const catRes = await fetch(`${API_PRODUCT_CATEGORIES_ENDPOINT}?outlet_id=${outletForCategory}`);
+                const catResult = await catRes.json();
+                setProductCategories(catResult.data?.data || []);
+            } catch (err: any) {
+                addNotification(`Gagal memuat kategori produk: ${err.message}`, 'error');
+            }
+        }
+        fetchCategories();
+    }, [outletForCategory, addNotification]);
+
+    const resetState = useCallback(() => {
+        setFormState({...initialFormState, business_id: businessUnitId});
+        setOutletForCategory('');
+    }, [businessUnitId]);
+
+    const handleClose = () => {
+        resetState();
+        onClose();
+    };
+    
+    // --- Form Handlers ---
+    const handleFormChange = (field: keyof typeof formState, value: any) => {
+        setFormState(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleProductTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const type = e.target.value as 'CONSUMPTION' | 'RENTAL';
+        setFormState(prev => ({
+            ...prev,
+            product_type: type,
+            variants: type === 'CONSUMPTION' ? [{ key: Date.now(), name: '', sku: '', stock_quantity: '', pricing: [{ key: Date.now(), customer_category_id: '', unit_id: '', price: '' }] }] : [],
+            resources: type === 'RENTAL' ? [{ key: Date.now(), name: '', availability: [{ key: Date.now(), day_of_week: '1', start_time: '08:00', end_time: '22:00' }], pricing: [{ key: Date.now(), customer_category_id: '', unit_id: '', price: '' }] }] : [],
+        }));
+    };
+
+    // --- Dynamic Handlers for Nested Arrays ---
+    const addVariant = () => setFormState(s => ({ ...s, variants: [...s.variants, { key: Date.now(), name: '', sku: '', stock_quantity: '', pricing: [{ key: Date.now(), customer_category_id: '', unit_id: '', price: '' }] }] }));
+    const removeVariant = (key: number) => setFormState(s => ({ ...s, variants: s.variants.filter(i => i.key !== key) }));
+    const handleVariantChange = (key: number, field: keyof Variant, value: any) => setFormState(s => ({ ...s, variants: s.variants.map(i => i.key === key ? { ...i, [field]: value } : i) }));
+    const addVariantPricing = (vKey: number) => setFormState(s => ({ ...s, variants: s.variants.map(i => i.key === vKey ? { ...i, pricing: [...i.pricing, { key: Date.now(), customer_category_id: '', unit_id: '', price: '' }] } : i)}));
+    const removeVariantPricing = (vKey: number, pKey: number) => setFormState(s => ({...s, variants: s.variants.map(i => i.key === vKey ? { ...i, pricing: i.pricing.filter(p => p.key !== pKey) } : i)}));
+    const handleVariantPricingChange = (vKey: number, pKey: number, field: keyof PricingRule, value: any) => setFormState(s => ({ ...s, variants: s.variants.map(i => i.key === vKey ? { ...i, pricing: i.pricing.map(p => p.key === pKey ? { ...p, [field]: value } : p) } : i) }));
+
+    const addResource = () => setFormState(s => ({ ...s, resources: [...s.resources, { key: Date.now(), name: '', availability: [{ key: Date.now(), day_of_week: '1', start_time: '08:00', end_time: '22:00' }], pricing: [{ key: Date.now(), customer_category_id: '', unit_id: '', price: '' }] }] }));
+    const removeResource = (key: number) => setFormState(s => ({ ...s, resources: s.resources.filter(i => i.key !== key) }));
+    const handleResourceChange = (key: number, field: keyof Resource, value: any) => setFormState(s => ({ ...s, resources: s.resources.map(i => i.key === key ? { ...i, [field]: value } : i)}));
+    const addResourceAvailability = (rKey: number) => setFormState(s => ({...s, resources: s.resources.map(i => i.key === rKey ? { ...i, availability: [...i.availability, { key: Date.now(), day_of_week: '1', start_time: '08:00', end_time: '22:00' }] } : i)}));
+    const removeResourceAvailability = (rKey: number, aKey: number) => setFormState(s => ({...s, resources: s.resources.map(i => i.key === rKey ? { ...i, availability: i.availability.filter(a => a.key !== aKey) } : i)}));
+    const handleResourceAvailabilityChange = (rKey: number, aKey: number, field: keyof AvailabilityRule, value: any) => setFormState(s => ({...s, resources: s.resources.map(i => i.key === rKey ? { ...i, availability: i.availability.map(a => a.key === aKey ? { ...a, [field]: value } : a) } : i)}));
+    const addResourcePricing = (rKey: number) => setFormState(s => ({...s, resources: s.resources.map(i => i.key === rKey ? { ...i, pricing: [...i.pricing, { key: Date.now(), customer_category_id: '', unit_id: '', price: '' }] } : i)}));
+    const removeResourcePricing = (rKey: number, pKey: number) => setFormState(s => ({...s, resources: s.resources.map(i => i.key === rKey ? { ...i, pricing: i.pricing.filter(p => p.key !== pKey) } : i)}));
+    const handleResourcePricingChange = (rKey: number, pKey: number, field: keyof PricingRule, value: any) => setFormState(s => ({...s, resources: s.resources.map(i => i.key === rKey ? { ...i, pricing: i.pricing.map(p => p.key === pKey ? { ...p, [field]: value } : p) } : i)}));
+
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsLoading(true);
+
+        try {
+            const payload: any = {
+                business_id: Number(formState.business_id),
+                category_id: formState.category_id ? Number(formState.category_id) : null,
+                name: formState.name,
+                product_type: formState.product_type,
+                description: formState.description || null,
+            };
+
+            if (formState.product_type === 'CONSUMPTION') {
+                payload.variants = formState.variants.map(v => ({
+                    name: v.name,
+                    sku: v.sku || null,
+                    stock_quantity: v.stock_quantity ? Number(v.stock_quantity) : null,
+                    pricing: v.pricing.map(p => ({
+                        customer_category_id: Number(p.customer_category_id),
+                        price: Number(p.price),
+                    })),
+                }));
+            } else { // RENTAL
+                payload.resources = formState.resources.map(r => ({
+                    name: r.name,
+                    availability: r.availability.map(a => ({
+                        day_of_week: Number(a.day_of_week),
+                        start_time: a.start_time,
+                        end_time: a.end_time,
+                    })),
+                    pricing: r.pricing.map(p => ({
+                        customer_category_id: Number(p.customer_category_id),
+                        unit_id: Number(p.unit_id),
+                        price: Number(p.price),
+                    })),
+                }));
+            }
+            
+            const res = await fetch(API_PRODUCTS_ENDPOINT, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            const result = await res.json();
+            if (!res.ok) {
+                const errorMessages = result.errors ? Object.values(result.errors).flat().join(' ') : result.message;
+                throw new Error(errorMessages || 'Gagal membuat produk');
+            }
+
+            addNotification('Produk baru berhasil dibuat!', 'success');
+            onSave();
+            handleClose();
+        } catch (err: any) {
+            addNotification(err.message, 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    if (!isOpen) return null;
+    
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start z-50 p-4">
+        <div className="bg-white rounded-lg shadow-xl my-8 p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+            <h2 className="text-2xl font-bold mb-6 text-slate-800">Tambah Produk Baru</h2>
+            <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Bagian 1: Informasi Dasar */}
+                <div className="p-4 border rounded-lg">
+                    <h3 className="font-semibold text-lg text-slate-700 mb-4">Informasi Dasar Produk</h3>
+                    <div className="space-y-4">
+                        <input type="hidden" value={formState.business_id} />
+                        <div>
+                            <label className="block text-sm font-medium text-slate-600">Nama Produk *</label>
+                            <input type="text" value={formState.name} onChange={e => handleFormChange('name', e.target.value)} required className="input" />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-600">Deskripsi</label>
+                            <textarea value={formState.description} onChange={e => handleFormChange('description', e.target.value)} rows={2} className="input" />
+                        </div>
+                        <fieldset>
+                            <legend className="block text-sm font-medium text-slate-600 mb-1">Jenis Produk *</legend>
+                            <div className="flex gap-4">
+                                <label className="flex items-center"><input type="radio" name="product_type" value="CONSUMPTION" checked={formState.product_type === 'CONSUMPTION'} onChange={handleProductTypeChange} className="radio" /> <span className="ml-2">Barang (Consumption)</span></label>
+                                <label className="flex items-center"><input type="radio" name="product_type" value="RENTAL" checked={formState.product_type === 'RENTAL'} onChange={handleProductTypeChange} className="radio" /> <span className="ml-2">Sewa (Rental)</span></label>
+                            </div>
+                        </fieldset>
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-slate-600">Outlet (untuk Kategori)</label>
+                                <select value={outletForCategory} onChange={e => setOutletForCategory(e.target.value)} className="input" disabled={outletsForBusiness.length === 0}>
+                                    {outletsForBusiness.length > 0 ? outletsForBusiness.map(o => <option key={o.id} value={o.id}>{o.name}</option>) : <option>Tidak ada outlet</option>}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-600">Kategori Produk</label>
+                                <select value={formState.category_id} onChange={e => handleFormChange('category_id', e.target.value)} className="input" disabled={!outletForCategory}>
+                                    <option value="">Tanpa Kategori</option>
+                                    {productCategories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Bagian 2A: Detail Produk CONSUMPTION */}
+                {formState.product_type === 'CONSUMPTION' && (
+                    <div className="p-4 border rounded-lg space-y-4">
+                        <h3 className="font-semibold text-lg text-slate-700">Varian Produk</h3>
+                        {formState.variants.map((variant, vIndex) => (
+                            <div key={variant.key} className="p-4 border rounded-md space-y-4 bg-slate-50/50">
+                                <div className="flex justify-between items-center"><p className="font-medium text-slate-800">Varian #{vIndex + 1}</p>{formState.variants.length > 1 && <button type="button" onClick={() => removeVariant(variant.key)} className="text-red-500"><TrashIcon className="w-5 h-5"/></button>}</div>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <input type="text" placeholder="Nama Varian *" value={variant.name} onChange={e => handleVariantChange(variant.key, 'name', e.target.value)} className="input" required/>
+                                    <input type="text" placeholder="SKU" value={variant.sku} onChange={e => handleVariantChange(variant.key, 'sku', e.target.value)} className="input" />
+                                    <input type="number" placeholder="Jumlah Stok" value={variant.stock_quantity} onChange={e => handleVariantChange(variant.key, 'stock_quantity', e.target.value)} className="input" />
+                                </div>
+                                <div>
+                                    <h4 className="text-sm font-medium text-slate-700 mb-2">Aturan Harga Varian</h4>
+                                    {variant.pricing.map(price => (
+                                        <div key={price.key} className="grid grid-cols-3 gap-2 items-center mb-2">
+                                            <select value={price.customer_category_id} onChange={e => handleVariantPricingChange(variant.key, price.key, 'customer_category_id', e.target.value)} className="input" required><option value="">Pilih Kategori Customer</option>{customerCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+                                            <input type="number" placeholder="Harga *" value={price.price} onChange={e => handleVariantPricingChange(variant.key, price.key, 'price', e.target.value)} className="input" required />
+                                            <button type="button" onClick={() => removeVariantPricing(variant.key, price.key)} className="text-red-500 justify-self-end"><TrashIcon className="w-4 h-4"/></button>
+                                        </div>
+                                    ))}
+                                    <button type="button" onClick={() => addVariantPricing(variant.key)} className="btn-secondary text-xs">+ Tambah Aturan Harga</button>
+                                </div>
+                            </div>
+                        ))}
+                        <button type="button" onClick={addVariant} className="btn-secondary text-sm">Tambah Varian</button>
+                    </div>
+                )}
+                
+                {/* Bagian 2B: Detail Produk RENTAL */}
+                {formState.product_type === 'RENTAL' && (
+                    <div className="p-4 border rounded-lg space-y-4">
+                        <h3 className="font-semibold text-lg text-slate-700">Aset (Resources)</h3>
+                        {formState.resources.map((res, rIndex) => (
+                            <div key={res.key} className="p-4 border rounded-md space-y-4 bg-slate-50/50">
+                                <div className="flex justify-between items-center"><p className="font-medium text-slate-800">Resource #{rIndex + 1}</p>{formState.resources.length > 1 && <button type="button" onClick={() => removeResource(res.key)} className="text-red-500"><TrashIcon className="w-5 h-5"/></button>}</div>
+                                <input type="text" placeholder="Nama Resource *" value={res.name} onChange={e => handleResourceChange(res.key, 'name', e.target.value)} className="input" required/>
+                                
+                                <div>
+                                    <h4 className="text-sm font-medium text-slate-700 mb-2">Jadwal Operasional</h4>
+                                    {res.availability.map(avail => (
+                                        <div key={avail.key} className="grid grid-cols-4 gap-2 items-center mb-2">
+                                            <select value={avail.day_of_week} onChange={e => handleResourceAvailabilityChange(res.key, avail.key, 'day_of_week', e.target.value)} className="input"><option value="">Pilih Hari</option>{daysOfWeek.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}</select>
+                                            <input type="time" value={avail.start_time} onChange={e => handleResourceAvailabilityChange(res.key, avail.key, 'start_time', e.target.value)} className="input" required/>
+                                            <input type="time" value={avail.end_time} onChange={e => handleResourceAvailabilityChange(res.key, avail.key, 'end_time', e.target.value)} className="input" required/>
+                                            <button type="button" onClick={() => removeResourceAvailability(res.key, avail.key)} className="text-red-500 justify-self-end"><TrashIcon className="w-4 h-4"/></button>
+                                        </div>
+                                    ))}
+                                    <button type="button" onClick={() => addResourceAvailability(res.key)} className="btn-secondary text-xs">+ Tambah Jadwal</button>
+                                </div>
+
+                                <div>
+                                    <h4 className="text-sm font-medium text-slate-700 mb-2">Harga Sewa</h4>
+                                    {res.pricing.map(price => (
+                                        <div key={price.key} className="grid grid-cols-4 gap-2 items-center mb-2">
+                                            <select value={price.customer_category_id} onChange={e => handleResourcePricingChange(res.key, price.key, 'customer_category_id', e.target.value)} className="input" required><option value="">Pilih Kategori Customer</option>{customerCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select>
+                                            <select value={price.unit_id} onChange={e => handleResourcePricingChange(res.key, price.key, 'unit_id', e.target.value)} className="input" required><option value="">Pilih Satuan</option>{units.filter(u=>u.type === 'TIME').map(u => <option key={u.unit_id} value={u.unit_id}>{u.name}</option>)}</select>
+                                            <input type="number" placeholder="Harga *" value={price.price} onChange={e => handleResourcePricingChange(res.key, price.key, 'price', e.target.value)} className="input" required />
+                                            <button type="button" onClick={() => removeResourcePricing(res.key, price.key)} className="text-red-500 justify-self-end"><TrashIcon className="w-4 h-4"/></button>
+                                        </div>
+                                    ))}
+                                    <button type="button" onClick={() => addResourcePricing(res.key)} className="btn-secondary text-xs">+ Tambah Aturan Harga</button>
+                                </div>
+                            </div>
+                        ))}
+                        <button type="button" onClick={addResource} className="btn-secondary text-sm">Tambah Resource</button>
+                    </div>
+                )}
+                
+                <div className="mt-8 flex justify-end space-x-3">
+                    <button type="button" onClick={handleClose} disabled={isLoading} className="btn-secondary">Batal</button>
+                    <button type="submit" disabled={isLoading} className="btn-primary w-40">{isLoading ? 'Menyimpan...' : 'Simpan Produk'}</button>
+                </div>
+            </form>
+             <style>{`.input { margin-top: 0.25rem; display: block; width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.375rem; } .radio { color: #dc2626; } .btn-primary { padding: 0.5rem 1rem; background-color: #dc2626; color: white; border-radius: 0.5rem; transition: background-color 0.2s; } .btn-primary:hover { background-color: #b91c1c; } .btn-primary:disabled { background-color: #fca5a5; cursor: not-allowed; } .btn-secondary { padding: 0.5rem 1rem; background-color: #e2e8f0; color: #1e293b; border-radius: 0.5rem; transition: background-color 0.2s; } .btn-secondary:hover { background-color: #cbd5e1; } .btn-secondary:disabled { background-color: #f1f5f9; cursor: not-allowed; } `}</style>
+        </div>
+        </div>
+    );
+};
+
+
+const ProductManagement: React.FC = () => {
+    const { addNotification } = useNotification();
+    
+    // Data state
+    const [businessUnits, setBusinessUnits] = useState<ApiBusinessUnit[]>([]);
+    const [products, setProducts] = useState<ApiProduct[]>([]);
+    
+    // UI state
+    const [isLoading, setIsLoading] = useState({ units: true, products: false });
+    const [selectedUnit, setSelectedUnit] = useState<string>('');
     const [selectedOutlet, setSelectedOutlet] = useState<string>('');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+    const [deletingProduct, setDeletingProduct] = useState<ApiProduct | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const availableOutlets = useMemo(() => {
-        return outlets.filter(o => o.businessUnitId === Number(selectedUnit));
-    }, [selectedUnit, outlets]);
-    
+        if (!selectedUnit) return [];
+        const unit = businessUnits.find(u => u.id === Number(selectedUnit));
+        return unit?.outlets || [];
+    }, [selectedUnit, businessUnits]);
+
+    // Fetch Business Units for filter
+    useEffect(() => {
+        const fetchBusinessUnits = async () => {
+            setIsLoading(prev => ({ ...prev, units: true }));
+            try {
+                const response = await fetch(API_BUSINESS_SUMMARY_ENDPOINT);
+                if (!response.ok) throw new Error('Gagal memuat unit bisnis');
+                const result = await response.json();
+                if (result.code === 200 && result.data?.data) {
+                    setBusinessUnits(result.data.data);
+                    if (result.data.data.length > 0) {
+                        const firstUnitId = String(result.data.data[0].id);
+                         if (!selectedUnit) {
+                            setSelectedUnit(firstUnitId);
+                         }
+                    }
+                } else {
+                    throw new Error(result.message || 'Format data tidak valid');
+                }
+            } catch (err: any) {
+                addNotification(err.message, 'error');
+            } finally {
+                setIsLoading(prev => ({ ...prev, units: false }));
+            }
+        };
+        fetchBusinessUnits();
+    }, [addNotification, selectedUnit]);
+
     useEffect(() => {
         if (availableOutlets.length > 0) {
             const currentOutletExists = availableOutlets.some(o => o.id === Number(selectedOutlet));
-            if (!currentOutletExists) setSelectedOutlet(String(availableOutlets[0].id));
+            if (!currentOutletExists) {
+                setSelectedOutlet(String(availableOutlets[0].id));
+            }
         } else {
             setSelectedOutlet('');
         }
-    }, [selectedUnit, availableOutlets, selectedOutlet]);
+    }, [availableOutlets, selectedOutlet]);
+    
+    const fetchProducts = useCallback(async () => {
+        if (!selectedOutlet) {
+            setProducts([]);
+            return;
+        }
+        setIsLoading(prev => ({ ...prev, products: true }));
+        try {
+            const response = await fetch(`${API_PRODUCTS_ENDPOINT}?outlet_id=${selectedOutlet}`);
+            if (!response.ok) throw new Error('Gagal memuat produk');
+            const result = await response.json();
+            setProducts(result.data?.data || []);
+        } catch (err: any) {
+            addNotification(err.message, 'error');
+            setProducts([]);
+        } finally {
+            setIsLoading(prev => ({ ...prev, products: false }));
+        }
+    }, [selectedOutlet, addNotification]);
 
-    const filteredProducts = useMemo(() => {
-        if (!selectedOutlet) return [];
-        return products.filter(p => p.outletId === Number(selectedOutlet));
-    }, [products, selectedOutlet]);
+    useEffect(() => {
+        fetchProducts();
+    }, [fetchProducts]);
 
-    const categoryMap = React.useMemo(() => 
-        categories.reduce((acc, cat) => {
-            acc[cat.id] = cat.name;
-            return acc;
-        }, {} as Record<string, string>),
-    [categories]);
-
-    const handleOpenModal = (product: Product | null = null) => {
-        setEditingProduct(product);
+    const handleOpenModal = () => {
         setIsModalOpen(true);
     };
-    const handleCloseModal = () => setIsModalOpen(false);
 
-    const handleSaveProduct = (productData: ProductFormData | Product, productVariants: VariantFormData[], productResources: ResourceFormData[]) => {
-        if ('id' in productData) {
-            updateProduct(productData, productVariants, productResources);
-        } else {
-            addProduct(productData, productVariants, productResources);
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+    };
+
+    const handleDelete = (product: ApiProduct) => {
+        setDeletingProduct(product);
+        setIsConfirmModalOpen(true);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deletingProduct) return;
+        setIsDeleting(true);
+        try {
+            const response = await fetch(`${API_PRODUCTS_ENDPOINT}/${deletingProduct.id}`, { method: 'DELETE' });
+            if (!response.ok) {
+                const result = await response.json().catch(() => ({}));
+                throw new Error(result.message || 'Gagal menghapus produk');
+            }
+            addNotification(`Produk "${deletingProduct.name}" berhasil dihapus.`, 'success');
+            await fetchProducts();
+        } catch (error: any) {
+            addNotification(error.message, 'error');
+        } finally {
+            setIsDeleting(false);
+            setIsConfirmModalOpen(false);
+            setDeletingProduct(null);
         }
     };
     
-    const getPriceDisplayString = (product: Product) => {
-        if (product.type === 'sewa') {
-            return `Rp${(product.generalPrice || 0).toLocaleString('id-ID')}`;
-        }
-        const productVariants = variants.filter(v => v.productId === product.id);
-        if (productVariants.length === 0) return 'N/A';
-        const prices = productVariants.map(v => v.generalPrice);
-        const minPrice = Math.min(...prices);
-        const maxPrice = Math.max(...prices);
-        if (minPrice === maxPrice) return `Rp${minPrice.toLocaleString('id-ID')}`;
-        return `Rp${minPrice.toLocaleString('id-ID')} - ${maxPrice.toLocaleString('id-ID')}`;
-    };
-
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h2 className="text-3xl font-bold text-slate-800">Manajemen Produk</h2>
                 <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-                    <select value={selectedUnit} onChange={(e) => setSelectedUnit(e.target.value)} className="w-full sm:w-auto px-4 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500">
-                      {businessUnits.map(unit => <option key={unit.id} value={unit.id}>{unit.name}</option>)}
+                     <select value={selectedUnit} onChange={(e) => setSelectedUnit(e.target.value)} disabled={isLoading.units} className="input">
+                      {isLoading.units ? <option>Memuat...</option> : businessUnits.map(unit => <option key={unit.id} value={unit.id}>{unit.name}</option>)}
                     </select>
-                    <select value={selectedOutlet} onChange={(e) => setSelectedOutlet(e.target.value)} className="w-full sm:w-auto px-4 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500" disabled={availableOutlets.length === 0}>
-                       {availableOutlets.map(outlet => <option key={outlet.id} value={outlet.id}>{outlet.name}</option>)}
+                    <select value={selectedOutlet} onChange={(e) => setSelectedOutlet(e.target.value)} disabled={!selectedUnit || availableOutlets.length === 0} className="input">
+                       {availableOutlets.length > 0 ? availableOutlets.map(o => <option key={o.id} value={o.id}>{o.name}</option>) : <option>Pilih Unit Usaha</option>}
                     </select>
                 </div>
             </div>
 
             <div className="flex justify-end">
-                <button onClick={() => handleOpenModal()} className={`flex items-center px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition ${!selectedOutlet ? 'opacity-50 cursor-not-allowed' : ''}`} disabled={!selectedOutlet}>
+                <button onClick={() => handleOpenModal()} disabled={!selectedUnit} className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition disabled:opacity-50">
                     <PlusIcon className="w-5 h-5 mr-2"/>
                     Tambah Produk
                 </button>
@@ -404,49 +505,32 @@ const ProductManagement: React.FC = () => {
                         <thead className="bg-slate-50">
                             <tr>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Produk</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Tipe</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Kategori</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Harga Umum</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Total Stok</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Outlet</th>
                                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-slate-200">
-                            {filteredProducts.map((product) => {
-                                const totalStock = product.type === 'barang' 
-                                    ? variants.filter(v => v.productId === product.id).reduce((sum, v) => sum + v.stock, 0)
-                                    : 'N/A';
-                                return (
+                            {isLoading.products ? (
+                                <tr><td colSpan={5} className="text-center py-10 text-slate-500">Memuat produk...</td></tr>
+                            ) : products.length > 0 ? (
+                                products.map((product) => (
                                 <tr key={product.id}>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <div className="flex items-center">
-                                            <img className="h-10 w-10 rounded-full object-cover" src={product.imageUrl} alt={product.name} />
-                                            <div className="ml-4">
-                                                <div className="text-sm font-medium text-slate-900">{product.name}</div>
-                                                <div className="text-xs text-slate-500 capitalize">{product.type}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{categoryMap[product.categoryId] || 'N/A'}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{getPriceDisplayString(product)}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                            typeof totalStock === 'number' ? (totalStock > 50 ? 'bg-green-100 text-green-800' : totalStock > 10 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800') : 'bg-blue-100 text-blue-800'
-                                        }`}>
-                                            {totalStock}
-                                        </span>
-                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-900">{product.name}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 capitalize">{product.product_type.toLowerCase()}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{product.category?.name || 'N/A'}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{
+                                        availableOutlets.find(o => o.id === Number(selectedOutlet))?.name || 'N/A'
+                                    }</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button onClick={() => handleOpenModal(product)} className="text-red-600 hover:text-red-900 mr-4"><EditIcon className="w-5 h-5"/></button>
-                                        <button onClick={() => deleteProduct(product.id)} className="text-red-600 hover:text-red-900"><TrashIcon className="w-5 h-5"/></button>
+                                        <button disabled title="Fitur ubah belum tersedia" className="text-slate-400 mr-4 cursor-not-allowed"><EditIcon className="w-5 h-5"/></button>
+                                        <button onClick={() => handleDelete(product)} className="text-red-600 hover:text-red-900"><TrashIcon className="w-5 h-5"/></button>
                                     </td>
                                 </tr>
-                            )})}
-                            {filteredProducts.length === 0 && (
-                                <tr>
-                                    <td colSpan={5} className="text-center py-10 text-slate-500">
-                                        {selectedOutlet ? 'Tidak ada produk untuk outlet ini.' : 'Silakan pilih unit usaha dan outlet.'}
-                                    </td>
-                                </tr>
+                            ))
+                            ) : (
+                                <tr><td colSpan={5} className="text-center py-10 text-slate-500">Tidak ada produk untuk outlet ini.</td></tr>
                             )}
                         </tbody>
                     </table>
@@ -456,11 +540,18 @@ const ProductManagement: React.FC = () => {
             {isModalOpen && <ProductModal 
                 isOpen={isModalOpen} 
                 onClose={handleCloseModal} 
-                onSave={handleSaveProduct} 
-                product={editingProduct}
-                allData={{ outlets, categories, variants, rentalResources, resourceAvailabilities, customerCategories }}
-                outletForNewProduct={Number(selectedOutlet)}
+                onSave={fetchProducts} 
+                businessUnitId={selectedUnit}
             />}
+            <ConfirmationModal
+                isOpen={isConfirmModalOpen}
+                onClose={() => setIsConfirmModalOpen(false)}
+                onConfirm={handleConfirmDelete}
+                title="Konfirmasi Hapus"
+                message={`Anda yakin ingin menghapus produk "${deletingProduct?.name}"? Aksi ini akan menghapus semua varian/resource dan harga terkait. Aksi ini tidak bisa dibatalkan.`}
+                isLoading={isDeleting}
+            />
+            <style>{`.input { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.375rem; }`}</style>
         </div>
     );
 };
