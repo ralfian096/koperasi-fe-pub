@@ -1,6 +1,4 @@
 
-
-
 export interface BusinessUnit {
   id: number;
   logo: string | null;
@@ -163,10 +161,40 @@ export interface Customer {
 export interface ChartOfAccount {
   id: number;
   business_id: number;
+  parent_id: number | null;
   account_code: string;
   account_name: string;
   account_type: 'ASSET' | 'LIABILITY' | 'EQUITY' | 'REVENUE' | 'EXPENSE';
+  normal_balance: 'DEBIT' | 'CREDIT';
+  is_active: number; // 1 = active, 0 = inactive
+  parent?: {
+      id: number;
+      account_name: string;
+  } | null;
+  children?: ChartOfAccount[]; // For local hierarchy building
 }
+
+// New types for Jurnal
+export interface JournalItem {
+  id: number;
+  chart_of_account_id: number;
+  debit: number;
+  credit: number;
+  account?: ChartOfAccount;
+}
+
+export interface JournalEntry {
+  id: number;
+  business_id: number;
+  date: string;
+  description: string;
+  total_debit: string;
+  total_credit: string;
+  items: JournalItem[];
+  created_at: string;
+  updated_at: string;
+}
+
 
 // New types for Pengajuan RAB
 export interface PengajuanItem {

@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState, useEffect } from 'react';
 import { User, BusinessUnit } from './types';
 import { NotificationProvider } from './contexts/NotificationContext';
@@ -28,7 +29,7 @@ import CustomerCategoryManagement from './components/CustomerCategoryManagement'
 import TaxManagement from './components/TaxManagement';
 import ProfitLossReport from './components/ProfitLossReport';
 // Import new placeholder components
-import Jurnal from './components/placeholders/Jurnal';
+import Jurnal from './components/Jurnal';
 import LaporanNeraca from './components/placeholders/LaporanNeraca';
 import RasioKeuangan from './components/placeholders/RasioKeuangan';
 import ChartOfAccountsManagement from './components/ChartOfAccountsManagement';
@@ -170,7 +171,7 @@ const App: React.FC = () => {
         return <ProfitLossReport selectedBusinessUnit={selectedBusinessUnit} />;
       // Render new Keuangan placeholders
       case 'jurnal':
-        return <Jurnal />;
+        return <Jurnal selectedBusinessUnit={selectedBusinessUnit} />;
       case 'balance-sheet-report':
         return <LaporanNeraca />;
       case 'financial-ratio-report':
