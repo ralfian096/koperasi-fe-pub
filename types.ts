@@ -1,4 +1,5 @@
 
+
 export interface BusinessUnit {
   id: number;
   logo: string | null;
@@ -160,13 +161,13 @@ export interface Customer {
 // New type for Finance module
 export interface ChartOfAccount {
   id: number;
-  business_id: number;
+  business_id: string;
   parent_id: number | null;
   account_code: string;
   account_name: string;
   account_type: 'ASSET' | 'LIABILITY' | 'EQUITY' | 'REVENUE' | 'EXPENSE';
   normal_balance: 'DEBIT' | 'CREDIT';
-  is_active: number; // 1 = active, 0 = inactive
+  is_active: string; // "1" = active, "0" = inactive
   parent?: {
       id: number;
       account_name: string;

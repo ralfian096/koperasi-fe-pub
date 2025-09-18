@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { ChartOfAccount, BusinessUnit } from '../types';
 import { EditIcon, TrashIcon, PlusIcon } from './icons/Icons';
@@ -52,7 +53,7 @@ const CoAModal: React.FC<{
                 account_code: account.account_code,
                 account_type: account.account_type,
                 normal_balance: account.normal_balance,
-                is_active: account.is_active,
+                is_active: Number(account.is_active),
             });
         } else {
             setFormData({
@@ -192,8 +193,8 @@ const ChartOfAccountsManagement: React.FC<ChartOfAccountsManagementProps> = ({ s
             const response = await fetch(`${API_ENDPOINT}?business_id=${selectedBusinessUnit.id}`);
             if (!response.ok) throw new Error('Gagal memuat bagan akun');
             const result = await response.json();
-            if (result.code === 200 && result.data?.data && Array.isArray(result.data.data)) {
-                setAccounts(result.data.data);
+            if (result.code === 200 && result.data && Array.isArray(result.data)) {
+                setAccounts(result.data);
             } else {
                 setAccounts([]);
             }
@@ -209,7 +210,7 @@ const ChartOfAccountsManagement: React.FC<ChartOfAccountsManagementProps> = ({ s
         fetchAccounts();
     }, [fetchAccounts]);
     
-    const rootAccounts = useMemo(() => {
+    const sortedRootAccounts = useMemo(() => {
         return [...accounts].sort((a, b) => a.account_code.localeCompare(b.account_code));
     }, [accounts]);
 
@@ -282,22 +283,33 @@ const ChartOfAccountsManagement: React.FC<ChartOfAccountsManagementProps> = ({ s
         }
     };
 
-    const AccountRow: React.FC<{account: ChartOfAccount, level: number}> = ({ account, level }) => (
-        <>
-            <tr key={account.id} className="hover:bg-slate-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900" style={{paddingLeft: `${1.5 + level * 1.5}rem`}}>{account.account_name}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-700">{account.account_code}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{accountTypeMap[account.account_type]}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{account.normal_balance}</td>
-                <td className="px-6 py-4 whitespace-nowrap"><span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${account.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{account.is_active ? 'Aktif' : 'Tidak Aktif'}</span></td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button onClick={() => handleOpenModal(account)} className="text-red-600 hover:text-red-900 mr-4"><EditIcon className="w-5 h-5"/></button>
-                    <button onClick={() => handleDeleteAccount(account)} className="text-red-600 hover:text-red-900"><TrashIcon className="w-5 h-5"/></button>
-                </td>
-            </tr>
-            {account.children_recursive && account.children_recursive.map(child => <AccountRow key={child.id} account={child} level={level + 1} />)}
-        </>
-    );
+    const AccountRow: React.FC<{account: ChartOfAccount, level: number}> = ({ account, level }) => {
+        const canDelete = !account.children_recursive || account.children_recursive.length === 0;
+
+        return (
+            <>
+                <tr key={account.id} className="hover:bg-slate-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900" style={{paddingLeft: `${1.5 + level * 1.5}rem`}}>{account.account_name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-700">{account.account_code}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{accountTypeMap[account.account_type]}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{account.normal_balance}</td>
+                    <td className="px-6 py-4 whitespace-nowrap"><span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${account.is_active === '1' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{account.is_active === '1' ? 'Aktif' : 'Tidak Aktif'}</span></td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button onClick={() => handleOpenModal(account)} className="text-red-600 hover:text-red-900 mr-4"><EditIcon className="w-5 h-5"/></button>
+                        <button
+                            onClick={() => { if (canDelete) { handleDeleteAccount(account); } }}
+                            disabled={!canDelete}
+                            title={canDelete ? "Hapus Akun" : "Akun ini memiliki sub-akun dan tidak dapat dihapus."}
+                            className={canDelete ? "text-red-600 hover:text-red-900" : "text-slate-400 cursor-not-allowed"}
+                        >
+                            <TrashIcon className="w-5 h-5"/>
+                        </button>
+                    </td>
+                </tr>
+                {account.children_recursive && account.children_recursive.sort((a, b) => a.account_code.localeCompare(b.account_code)).map(child => <AccountRow key={child.id} account={child} level={level + 1} />)}
+            </>
+        );
+    };
 
     return (
         <div className="space-y-6">
@@ -326,8 +338,8 @@ const ChartOfAccountsManagement: React.FC<ChartOfAccountsManagementProps> = ({ s
                         <tbody className="bg-white divide-y divide-slate-200">
                             {isLoading ? (
                                 <tr><td colSpan={6} className="text-center py-10 text-slate-500">Memuat data...</td></tr>
-                            ) : rootAccounts.length > 0 ? (
-                                rootAccounts.map(account => <AccountRow key={account.id} account={account} level={0} />)
+                            ) : sortedRootAccounts.length > 0 ? (
+                                sortedRootAccounts.map(account => <AccountRow key={account.id} account={account} level={0} />)
                             ) : (
                                 <tr><td colSpan={6} className="text-center py-10 text-slate-500">Tidak ada akun yang terdaftar untuk unit usaha ini.</td></tr>
                             )}

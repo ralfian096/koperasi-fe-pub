@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { JournalEntry, ChartOfAccount } from '../types';
 import { useNotification } from '../contexts/NotificationContext';
@@ -61,7 +62,7 @@ const JurnalModal: React.FC<JurnalModalProps> = ({ isOpen, onClose, onSave, jour
             const response = await fetch(`${API_COA_ENDPOINT}?business_id=${businessUnitId}`);
             if (!response.ok) throw new Error('Gagal memuat Bagan Akun');
             const result = await response.json();
-            setChartOfAccounts(result.data?.data || []);
+            setChartOfAccounts(result.data || []);
         } catch (err: any) {
             addNotification(err.message, 'error');
             setChartOfAccounts([]);
@@ -146,14 +147,19 @@ const JurnalModal: React.FC<JurnalModalProps> = ({ isOpen, onClose, onSave, jour
         }
         
         setIsSubmitting(true);
+        
+        const validItems = items.filter(item => 
+            item.chart_of_account_id && (parseFloat(item.debit) > 0 || parseFloat(item.credit) > 0)
+        );
+
         const payload = {
             business_id: businessUnitId,
-            date,
+            entry_date: date,
             description,
-            items: items.map(item => ({
-                chart_of_account_id: Number(item.chart_of_account_id),
-                debit: parseFloat(item.debit) || 0,
-                credit: parseFloat(item.credit) || 0,
+            details: validItems.map(item => ({
+                account_chart_id: Number(item.chart_of_account_id),
+                entry_type: parseFloat(item.debit) > 0 ? 'DEBIT' : 'CREDIT',
+                amount: parseFloat(item.debit) || parseFloat(item.credit),
             })),
         };
 
