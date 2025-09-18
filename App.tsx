@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect } from 'react';
 import { User, BusinessUnit } from './types';
 import { NotificationProvider } from './contexts/NotificationContext';
@@ -30,6 +31,7 @@ import ProfitLossReport from './components/ProfitLossReport';
 import Jurnal from './components/placeholders/Jurnal';
 import LaporanNeraca from './components/placeholders/LaporanNeraca';
 import RasioKeuangan from './components/placeholders/RasioKeuangan';
+import ChartOfAccountsManagement from './components/ChartOfAccountsManagement';
 
 
 export type MainView = 'dashboard' | 'usaha' | 'pengajuan' | 'koperasi' | 'keuangan' | 'pengaturan';
@@ -52,7 +54,8 @@ export type SubView =
   // New views for Keuangan group
   | 'jurnal'
   | 'balance-sheet-report'
-  | 'financial-ratio-report';
+  | 'financial-ratio-report'
+  | 'chart-of-accounts';
 
 
 const App: React.FC = () => {
@@ -172,6 +175,8 @@ const App: React.FC = () => {
         return <LaporanNeraca />;
       case 'financial-ratio-report':
         return <RasioKeuangan />;
+      case 'chart-of-accounts':
+        return <ChartOfAccountsManagement selectedBusinessUnit={selectedBusinessUnit} />;
       default:
         return <Dashboard selectedBusinessUnit={selectedBusinessUnit} />;
     }

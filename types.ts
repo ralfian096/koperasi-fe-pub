@@ -1,5 +1,6 @@
 
 
+
 export interface BusinessUnit {
   id: number;
   logo: string | null;
@@ -158,6 +159,15 @@ export interface Customer {
   businessUnitId: number;
 }
 
+// New type for Finance module
+export interface ChartOfAccount {
+  id: number;
+  business_id: number;
+  account_code: string;
+  account_name: string;
+  account_type: 'ASSET' | 'LIABILITY' | 'EQUITY' | 'REVENUE' | 'EXPENSE';
+}
+
 // New types for Pengajuan RAB
 export interface PengajuanItem {
   id: number;
@@ -176,4 +186,5 @@ export interface Pengajuan {
   status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | null;
   total_amount: number;
   items: PengajuanItem[];
+  rejection_reason?: string | null;
 }

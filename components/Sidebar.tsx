@@ -1,4 +1,6 @@
 
+
+
 import React, { useState } from 'react';
 import type { MainView, SubView } from '../App';
 import { BusinessUnit } from '../types';
@@ -110,6 +112,7 @@ const UsahaSidebar: React.FC<{
             <NavLink view="taxes" label="Pajak" icon={BanknotesIcon} currentView={currentView} setCurrentView={setCurrentView} />
             
              <CollapsibleNavGroup title="Keuangan" icon={CurrencyDollarIcon} groupId="keuangan" openGroupId={openGroupId} setOpenGroupId={setOpenGroupId}>
+                <NavLink view="chart-of-accounts" label="Bagan Akun" icon={ReportIcon} currentView={currentView} setCurrentView={setCurrentView} isSubItem />
                 <NavLink view="jurnal" label="Jurnal" icon={ReportIcon} currentView={currentView} setCurrentView={setCurrentView} isSubItem />
                 <NavLink view="profit-loss-report" label="Laporan PHU" icon={ReportIcon} currentView={currentView} setCurrentView={setCurrentView} isSubItem />
                 <NavLink view="balance-sheet-report" label="Laporan Neraca" icon={ReportIcon} currentView={currentView} setCurrentView={setCurrentView} isSubItem />

@@ -85,6 +85,7 @@ const PengajuanModal: React.FC<PengajuanModalProps> = ({ isOpen, onClose, onSave
             title,
             status,
             total_amount: totalAmount,
+            account_id: 1,
             items: items.map(({ key, total_price, ...rest }) => ({
                 name: rest.description,
                 quantity: Number(rest.quantity),

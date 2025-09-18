@@ -5,6 +5,7 @@ import { Pengajuan as PengajuanType } from '../types';
 import { PlusIcon, EditIcon, TrashIcon, EyeIcon } from './icons/Icons';
 import PengajuanModal from './PengajuanModal';
 import ConfirmationModal from './ConfirmationModal';
+import RejectionModal from './RejectionModal';
 import { useNotification } from '../contexts/NotificationContext';
 
 const API_ENDPOINT = 'https://api.majukoperasiku.my.id/manage/budget-proposals';
@@ -34,6 +35,8 @@ const Pengajuan: React.FC = () => {
     const [editingPengajuan, setEditingPengajuan] = useState<PengajuanType | null>(null);
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [pengajuanToDelete, setPengajuanToDelete] = useState<PengajuanType | null>(null);
+    const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
+    const [pengajuanToReject, setPengajuanToReject] = useState<PengajuanType | null>(null);
 
     const [statusFilter, setStatusFilter] = useState<string>('all');
 
@@ -51,6 +54,7 @@ const Pengajuan: React.FC = () => {
                     ...p,
                     id: p.id,
                     submitted_at: new Date(p.submitted_at),
+                    rejection_reason: p.rejection_reason || null,
                 }));
                 setPengajuanList(mappedData);
             } else {
@@ -113,13 +117,23 @@ const Pengajuan: React.FC = () => {
         }
     };
     
-    const handleStatusUpdate = async (p: PengajuanType, newStatus: 'APPROVED' | 'REJECTED') => {
+    const handleStatusUpdate = async (p: PengajuanType, newStatus: 'APPROVED' | 'REJECTED', reason?: string) => {
         setIsSubmitting(true);
          try {
+            const payload: { _method: 'PUT'; status: string; rejection_reason?: string; account_id: number; } = {
+                _method: 'PUT',
+                status: newStatus,
+                account_id: 1,
+            };
+
+            if (newStatus === 'REJECTED' && reason) {
+                payload.rejection_reason = reason;
+            }
+
             const response = await fetch(`${API_ENDPOINT}/${p.id}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify({ _method: 'PUT', status: newStatus }),
+                body: JSON.stringify(payload),
             });
             const result = await response.json();
             if (!response.ok) throw new Error(result.message || 'Gagal memperbarui status');
@@ -131,6 +145,19 @@ const Pengajuan: React.FC = () => {
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleOpenRejectionModal = (p: PengajuanType) => {
+        setPengajuanToReject(p);
+        setIsRejectionModalOpen(true);
+    };
+
+    const handleConfirmRejection = (reason: string) => {
+        if (pengajuanToReject) {
+            handleStatusUpdate(pengajuanToReject, 'REJECTED', reason);
+        }
+        setIsRejectionModalOpen(false);
+        setPengajuanToReject(null);
     };
 
     return (
@@ -185,6 +212,11 @@ const Pengajuan: React.FC = () => {
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="text-sm font-semibold text-slate-900">{p.title}</div>
                                                 <div className="text-xs text-slate-500">{p.submission_code}</div>
+                                                {p.status === 'REJECTED' && p.rejection_reason && (
+                                                    <div className="text-xs text-red-600 mt-1 italic max-w-xs truncate" title={p.rejection_reason}>
+                                                        Alasan: {p.rejection_reason}
+                                                    </div>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{p.submitted_at.toLocaleDateString('id-ID')}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-800">
@@ -199,7 +231,7 @@ const Pengajuan: React.FC = () => {
                                                 {p.status === 'SUBMITTED' && (
                                                     <>
                                                         <button onClick={() => handleStatusUpdate(p, 'APPROVED')} disabled={isSubmitting} className="px-3 py-1 text-xs font-medium text-green-700 bg-green-100 rounded-md hover:bg-green-200 disabled:opacity-50">Terima</button>
-                                                        <button onClick={() => handleStatusUpdate(p, 'REJECTED')} disabled={isSubmitting} className="px-3 py-1 text-xs font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200 disabled:opacity-50">Tolak</button>
+                                                        <button onClick={() => handleOpenRejectionModal(p)} disabled={isSubmitting} className="px-3 py-1 text-xs font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200 disabled:opacity-50">Tolak</button>
                                                     </>
                                                 )}
                                                 <button
@@ -246,6 +278,13 @@ const Pengajuan: React.FC = () => {
                 title="Konfirmasi Hapus"
                 message={`Anda yakin ingin menghapus pengajuan "${pengajuanToDelete?.title}"? Aksi ini tidak bisa dibatalkan.`}
                 isLoading={isSubmitting}
+            />
+
+            <RejectionModal
+                isOpen={isRejectionModalOpen}
+                onClose={() => setIsRejectionModalOpen(false)}
+                onSubmit={handleConfirmRejection}
+                isSubmitting={isSubmitting}
             />
         </div>
     );
