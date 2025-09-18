@@ -1,33 +1,53 @@
 
 import React, { useState } from 'react';
-import { BusinessUnit, FinancialRatioData, FinancialRatio } from '../types';
+import { BusinessUnit, FinancialRatioData, FinancialRatioDetail } from '../types';
 import { useNotification } from '../contexts/NotificationContext';
 
 const API_ENDPOINT = 'https://api.majukoperasiku.my.id/manage/finance/reports/financial-ratio';
 
-// Component to display a single ratio
-const RatioCard: React.FC<{ ratio: FinancialRatio }> = ({ ratio }) => (
-    <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
-        <div className="flex justify-between items-baseline">
-            <h5 className="font-semibold text-slate-700">{ratio.name}</h5>
-            <p className="text-2xl font-bold text-indigo-600">{ratio.value}</p>
+// Component to display a single, detailed ratio
+const RatioCard: React.FC<{ ratio: FinancialRatioDetail }> = ({ ratio }) => {
+    const isPercentage = ratio.formula.includes('%');
+    const displayValue = `${ratio.value.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}${isPercentage ? '%' : ''}`;
+
+    return (
+        <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 flex flex-col">
+            <div className="flex justify-between items-start">
+                <h5 className="font-semibold text-slate-700 max-w-[70%]">{ratio.name}</h5>
+                <p className="text-2xl font-bold text-indigo-600">{displayValue}</p>
+            </div>
+            <p className="text-sm text-slate-500 mt-2 flex-grow">{ratio.interpretation}</p>
+            <details className="mt-3 text-xs">
+                <summary className="cursor-pointer text-slate-500 hover:text-slate-700">Lihat Detail Perhitungan</summary>
+                <div className="mt-2 p-3 bg-white rounded border">
+                    <p className="font-semibold">Formula:</p>
+                    <p className="font-mono text-slate-600">{ratio.formula}</p>
+                    <p className="font-semibold mt-2">Komponen:</p>
+                    <ul className="list-disc list-inside text-slate-600">
+                        {Object.entries(ratio.components).map(([key, value]) => (
+                            <li key={key}>{key.replace(/_/g, ' ')}: {`Rp ${value.toLocaleString('id-ID')}`}</li>
+                        ))}
+                    </ul>
+                </div>
+            </details>
         </div>
-        <p className="text-sm text-slate-500 mt-1">{ratio.interpretation}</p>
-    </div>
-);
+    );
+};
 
 
 const RasioKeuangan: React.FC<{ selectedBusinessUnit: BusinessUnit }> = ({ selectedBusinessUnit }) => {
     const { addNotification } = useNotification();
     const today = new Date().toISOString().split('T')[0];
+    const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
 
+    const [startDate, setStartDate] = useState(firstDayOfMonth);
     const [endDate, setEndDate] = useState(today);
     const [reportData, setReportData] = useState<FinancialRatioData | null>(null);
     const [isLoading, setIsLoading] = useState(false);
 
     const handleGenerateReport = async () => {
-        if (!endDate) {
-            addNotification('Tanggal akhir harus diisi.', 'error');
+        if (!startDate || !endDate) {
+            addNotification('Tanggal mulai dan tanggal akhir harus diisi.', 'error');
             return;
         }
         
@@ -37,6 +57,7 @@ const RasioKeuangan: React.FC<{ selectedBusinessUnit: BusinessUnit }> = ({ selec
         try {
             const params = new URLSearchParams({
                 business_id: String(selectedBusinessUnit.id),
+                start_date: startDate,
                 end_date: endDate,
             });
             const response = await fetch(`${API_ENDPOINT}?${params.toString()}`);
@@ -59,16 +80,13 @@ const RasioKeuangan: React.FC<{ selectedBusinessUnit: BusinessUnit }> = ({ selec
         }
     };
 
-    const groupedRatios = React.useMemo(() => {
-        if (!reportData) return {};
-        return reportData.ratios.reduce((acc, ratio) => {
-            const category = ratio.category || 'Lainnya';
-            if (!acc[category]) {
-                acc[category] = [];
-            }
-            acc[category].push(ratio);
-            return acc;
-        }, {} as Record<string, FinancialRatio[]>);
+    const processedRatios = React.useMemo(() => {
+        if (!reportData) return [];
+        // Filter out metadata and extract only the ratio objects
+        return Object.values(reportData).filter(
+            (value): value is FinancialRatioDetail => 
+                typeof value === 'object' && value !== null && 'name' in value && 'formula' in value
+        );
     }, [reportData]);
 
 
@@ -78,24 +96,37 @@ const RasioKeuangan: React.FC<{ selectedBusinessUnit: BusinessUnit }> = ({ selec
             
             {/* Filters */}
             <div className="p-4 bg-white rounded-lg shadow-md">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                     <div>
-                        <label htmlFor="end_date" className="block text-sm font-medium text-slate-600">Per Tanggal</label>
+                        <label htmlFor="start_date" className="block text-sm font-medium text-slate-600">Tanggal Mulai</label>
+                        <input
+                            type="date"
+                            id="start_date"
+                            value={startDate}
+                            onChange={(e) => setStartDate(e.target.value)}
+                            className="input w-full"
+                        />
+                    </div>
+                     <div>
+                        <label htmlFor="end_date" className="block text-sm font-medium text-slate-600">Tanggal Akhir</label>
                         <input
                             type="date"
                             id="end_date"
                             value={endDate}
                             onChange={(e) => setEndDate(e.target.value)}
+                            min={startDate}
                             className="input w-full"
                         />
                     </div>
-                    <button
-                        onClick={handleGenerateReport}
-                        disabled={isLoading}
-                        className="btn-primary h-10"
-                    >
-                        {isLoading ? 'Menganalisis...' : 'Tampilkan Analisis'}
-                    </button>
+                    <div className="md:col-span-2">
+                        <button
+                            onClick={handleGenerateReport}
+                            disabled={isLoading}
+                            className="btn-primary h-10 w-full"
+                        >
+                            {isLoading ? 'Menganalisis...' : 'Tampilkan Analisis'}
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -109,7 +140,7 @@ const RasioKeuangan: React.FC<{ selectedBusinessUnit: BusinessUnit }> = ({ selec
 
                 {!isLoading && !reportData && (
                      <div className="text-center py-10 text-slate-500">
-                        <p>Pilih tanggal dan klik "Tampilkan Analisis" untuk memulai.</p>
+                        <p>Pilih periode tanggal dan klik "Tampilkan Analisis" untuk memulai.</p>
                     </div>
                 )}
                 
@@ -118,17 +149,18 @@ const RasioKeuangan: React.FC<{ selectedBusinessUnit: BusinessUnit }> = ({ selec
                         <div className="text-center">
                             <h3 className="text-xl font-bold text-slate-900">{selectedBusinessUnit.name}</h3>
                             <h4 className="text-lg font-semibold text-slate-800">{reportData.report_name}</h4>
-                            <p className="text-sm text-slate-500">Per tanggal {reportData.as_of_date}</p>
+                            <p className="text-sm text-slate-500">Periode {reportData.period.replace(' to ', ' s/d ')}</p>
                         </div>
-
-                        {Object.entries(groupedRatios).map(([category, ratios]) => (
-                            <div key={category}>
-                                <h4 className="font-bold text-slate-800 text-lg py-2 border-b-2 border-slate-200 mb-4">{category}</h4>
-                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                    {ratios.map(ratio => <RatioCard key={ratio.name} ratio={ratio} />)}
-                                </div>
+                        
+                        {processedRatios.length > 0 ? (
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {processedRatios.map(ratio => <RatioCard key={ratio.name} ratio={ratio} />)}
                             </div>
-                        ))}
+                        ) : (
+                             <div className="text-center py-10 text-slate-500">
+                                <p>Tidak ada data rasio yang dapat dihitung untuk periode ini.</p>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

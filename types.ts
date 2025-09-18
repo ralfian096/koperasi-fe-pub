@@ -251,18 +251,25 @@ export interface BalanceSheetData {
 }
 
 // New types for Laporan Rasio Keuangan / Financial Ratio Analysis
-export interface FinancialRatio {
-    category: 'Likuiditas' | 'Profitabilitas' | 'Solvabilitas' | string;
+export interface FinancialRatioComponent {
+    [key: string]: number;
+}
+
+export interface FinancialRatioDetail {
     name: string;
-    value: string; // Keep as string to handle percentages or ratios like '1.5x'
+    formula: string;
+    value: number;
     interpretation: string;
+    components: FinancialRatioComponent;
 }
 
 export interface FinancialRatioData {
     report_name: string;
     business_id: string;
-    as_of_date: string;
-    ratios: FinancialRatio[];
+    period: string;
+    debt_ratio: FinancialRatioDetail;
+    profitability_ratio: FinancialRatioDetail;
+    [key: string]: any; // Allows for additional, unspecified ratios
 }
 
 
