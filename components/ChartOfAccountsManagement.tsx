@@ -153,6 +153,23 @@ interface ChartOfAccountsManagementProps {
     selectedBusinessUnit: BusinessUnit;
 }
 
+const flattenAccounts = (accounts: ChartOfAccount[]): ChartOfAccount[] => {
+    const result: ChartOfAccount[] = [];
+    const recurse = (accs: ChartOfAccount[], depth: number) => {
+        for (const acc of accs) {
+            // Create a new object without the children properties to avoid circular references
+            const { children, children_recursive, ...accData } = acc;
+            result.push({ ...accData, account_name: `${'--'.repeat(depth)} ${acc.account_name}` });
+            if (acc.children_recursive && acc.children_recursive.length > 0) {
+                recurse(acc.children_recursive, depth + 1);
+            }
+        }
+    };
+    recurse(accounts, 0);
+    return result;
+};
+
+
 // Main Component
 const ChartOfAccountsManagement: React.FC<ChartOfAccountsManagementProps> = ({ selectedBusinessUnit }) => {
     const { addNotification } = useNotification();
@@ -175,7 +192,7 @@ const ChartOfAccountsManagement: React.FC<ChartOfAccountsManagementProps> = ({ s
             const response = await fetch(`${API_ENDPOINT}?business_id=${selectedBusinessUnit.id}`);
             if (!response.ok) throw new Error('Gagal memuat bagan akun');
             const result = await response.json();
-            if (result.code === 200 && result.data && Array.isArray(result.data.data)) {
+            if (result.code === 200 && result.data?.data && Array.isArray(result.data.data)) {
                 setAccounts(result.data.data);
             } else {
                 setAccounts([]);
@@ -192,27 +209,11 @@ const ChartOfAccountsManagement: React.FC<ChartOfAccountsManagementProps> = ({ s
         fetchAccounts();
     }, [fetchAccounts]);
     
-    const hierarchicalAccounts = useMemo(() => {
-        const items = JSON.parse(JSON.stringify(accounts)) as ChartOfAccount[];
-        const childrenOf: { [key: string]: ChartOfAccount[] } = {};
-        items.forEach(item => {
-            if (item.parent_id) {
-                if (!childrenOf[item.parent_id]) {
-                    childrenOf[item.parent_id] = [];
-                }
-                childrenOf[item.parent_id].push(item);
-            }
-        });
-
-        items.forEach(item => {
-            if (childrenOf[item.id]) {
-                item.children = childrenOf[item.id].sort((a, b) => a.account_code.localeCompare(b.account_code));
-            }
-        });
-
-        return items.filter(item => !item.parent_id).sort((a, b) => a.account_code.localeCompare(b.account_code));
+    const rootAccounts = useMemo(() => {
+        return [...accounts].sort((a, b) => a.account_code.localeCompare(b.account_code));
     }, [accounts]);
 
+    const flattenedAccountsForDropdown = useMemo(() => flattenAccounts(accounts), [accounts]);
 
     const handleOpenModal = (account: ChartOfAccount | null = null) => {
         setEditingAccount(account);
@@ -294,7 +295,7 @@ const ChartOfAccountsManagement: React.FC<ChartOfAccountsManagementProps> = ({ s
                     <button onClick={() => handleDeleteAccount(account)} className="text-red-600 hover:text-red-900"><TrashIcon className="w-5 h-5"/></button>
                 </td>
             </tr>
-            {account.children && account.children.map(child => <AccountRow key={child.id} account={child} level={level + 1} />)}
+            {account.children_recursive && account.children_recursive.map(child => <AccountRow key={child.id} account={child} level={level + 1} />)}
         </>
     );
 
@@ -325,8 +326,8 @@ const ChartOfAccountsManagement: React.FC<ChartOfAccountsManagementProps> = ({ s
                         <tbody className="bg-white divide-y divide-slate-200">
                             {isLoading ? (
                                 <tr><td colSpan={6} className="text-center py-10 text-slate-500">Memuat data...</td></tr>
-                            ) : hierarchicalAccounts.length > 0 ? (
-                                hierarchicalAccounts.map(account => <AccountRow key={account.id} account={account} level={0} />)
+                            ) : rootAccounts.length > 0 ? (
+                                rootAccounts.map(account => <AccountRow key={account.id} account={account} level={0} />)
                             ) : (
                                 <tr><td colSpan={6} className="text-center py-10 text-slate-500">Tidak ada akun yang terdaftar untuk unit usaha ini.</td></tr>
                             )}
@@ -334,7 +335,7 @@ const ChartOfAccountsManagement: React.FC<ChartOfAccountsManagementProps> = ({ s
                     </table>
                 </div>
             </div>
-            <CoAModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSaveAccount} account={editingAccount} accounts={accounts} />
+            <CoAModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSave={handleSaveAccount} account={editingAccount} accounts={flattenedAccountsForDropdown} />
             <ConfirmationModal
                 isOpen={isConfirmModalOpen}
                 onClose={() => setIsConfirmModalOpen(false)}

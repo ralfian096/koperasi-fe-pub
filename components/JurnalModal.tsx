@@ -7,6 +7,25 @@ import { TrashIcon, PlusIcon } from './icons/Icons';
 const API_JOURNAL_ENDPOINT = 'https://api.majukoperasiku.my.id/manage/finance/journal-entries';
 const API_COA_ENDPOINT = 'https://api.majukoperasiku.my.id/manage/finance/chart-of-accounts';
 
+const flattenCoa = (accounts: ChartOfAccount[]): ChartOfAccount[] => {
+    const flattened: ChartOfAccount[] = [];
+    const traverse = (accs: ChartOfAccount[], level: number) => {
+        for (const account of accs) {
+            const { children, children_recursive, ...accData } = account;
+            flattened.push({ 
+                ...accData, 
+                account_name: `${'--'.repeat(level)} ${account.account_name}`
+            });
+            if (account.children_recursive && account.children_recursive.length > 0) {
+                traverse(account.children_recursive, level + 1);
+            }
+        }
+    };
+    traverse(accounts, 0);
+    return flattened;
+};
+
+
 interface JurnalModalProps {
     isOpen: boolean;
     onClose: () => void;
@@ -75,6 +94,8 @@ const JurnalModal: React.FC<JurnalModalProps> = ({ isOpen, onClose, onSave, jour
         }
     }, [isOpen, journalToEdit, fetchChartOfAccounts]);
     
+    const flattenedChartOfAccounts = useMemo(() => flattenCoa(chartOfAccounts), [chartOfAccounts]);
+
     const handleItemChange = (key: number, field: keyof Omit<JournalItemForm, 'key'>, value: string) => {
         setItems(currentItems => currentItems.map(item => {
             if (item.key === key) {
@@ -193,7 +214,7 @@ const JurnalModal: React.FC<JurnalModalProps> = ({ isOpen, onClose, onSave, jour
                                         <td>
                                             <select value={item.chart_of_account_id} onChange={e => handleItemChange(item.key, 'chart_of_account_id', e.target.value)} disabled={isReadOnly || isSubmitting || isLoadingCoa} className="input my-1" required>
                                                 <option value="">{isLoadingCoa ? 'Memuat...' : '-- Pilih Akun --'}</option>
-                                                {chartOfAccounts.map(acc => <option key={acc.id} value={acc.id}>{acc.account_code} - {acc.account_name}</option>)}
+                                                {flattenedChartOfAccounts.map(acc => <option key={acc.id} value={acc.id}>{acc.account_code} - {acc.account_name}</option>)}
                                             </select>
                                         </td>
                                         <td><input type="number" placeholder="0" value={item.debit} onChange={e => handleItemChange(item.key, 'debit', e.target.value)} disabled={isReadOnly || isSubmitting} className="input my-1 text-right" min="0"/></td>

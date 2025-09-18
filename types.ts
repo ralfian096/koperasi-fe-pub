@@ -172,6 +172,7 @@ export interface ChartOfAccount {
       account_name: string;
   } | null;
   children?: ChartOfAccount[]; // For local hierarchy building
+  children_recursive?: ChartOfAccount[]; // From API
 }
 
 // New types for Jurnal
