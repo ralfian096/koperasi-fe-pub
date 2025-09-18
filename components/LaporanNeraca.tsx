@@ -53,7 +53,7 @@ const LaporanNeraca: React.FC<{ selectedBusinessUnit: BusinessUnit }> = ({ selec
         try {
             const params = new URLSearchParams({
                 business_id: String(selectedBusinessUnit.id),
-                date: asOfDate,
+                end_date: asOfDate,
             });
             const response = await fetch(`${API_ENDPOINT}?${params.toString()}`);
             const result = await response.json();

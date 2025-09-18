@@ -1,7 +1,8 @@
 
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { MainView } from '../App';
 import { BusinessUnit } from '../types';
+import { LogoutIcon, UserCircleIcon, Cog6ToothIcon, KeyIcon } from './icons/Icons';
 
 interface TopNavProps {
   currentMainView: MainView;
@@ -31,6 +32,10 @@ const NavItem: React.FC<{
 
 const TopNav: React.FC<TopNavProps> = ({ currentMainView, setMainView, setSelectedBusinessUnit, onLogout }) => {
     
+    // State for the user dropdown menu
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
     const handleNavClick = (view: MainView) => {
         setMainView(view);
         setSelectedBusinessUnit(null); // Reset context when switching main sections
@@ -44,6 +49,25 @@ const TopNav: React.FC<TopNavProps> = ({ currentMainView, setMainView, setSelect
         { id: 'keuangan', label: 'Keuangan' },
         { id: 'pengaturan', label: 'Pengaturan' },
     ];
+    
+    const handleLogoutClick = () => {
+        setIsDropdownOpen(false);
+        onLogout();
+    };
+
+    // Effect to handle clicks outside the dropdown
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
 
     return (
         <header className="bg-indigo-700 shadow-md z-20">
@@ -71,12 +95,55 @@ const TopNav: React.FC<TopNavProps> = ({ currentMainView, setMainView, setSelect
                         </nav>
                     </div>
                     <div className="flex items-center">
-                        <div className="relative ml-3">
-                            <button className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-800 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-indigo-600">
-                                <span className="sr-only">Open user menu</span>
-                                DF
-                            </button>
-                            {/* Dropdown can be added here later */}
+                        {/* Profile dropdown */}
+                        <div className="relative ml-3" ref={dropdownRef}>
+                            <div>
+                                <button 
+                                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                    type="button"
+                                    className="flex h-10 w-10 items-center justify-center rounded-full bg-indigo-800 text-sm font-semibold text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-indigo-600" id="user-menu-button" aria-expanded="false" aria-haspopup="true"
+                                >
+                                    <span className="sr-only">Open user menu</span>
+                                    DF
+                                </button>
+                            </div>
+
+                            {isDropdownOpen && (
+                                <div 
+                                    className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none" 
+                                    role="menu" 
+                                    aria-orientation="vertical" 
+                                    aria-labelledby="user-menu-button"
+                                >
+                                    <div className="px-4 py-3 border-b border-slate-200">
+                                        <p className="text-sm text-slate-800 font-semibold">Administrator</p>
+                                        <p className="text-xs text-slate-500 truncate">admin@example.com</p>
+                                    </div>
+                                    <div className="py-1">
+                                        <a href="#" className="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100" role="menuitem">
+                                            <UserCircleIcon className="w-5 h-5 text-slate-500"/>
+                                            Profil Saya
+                                        </a>
+                                        <a href="#" className="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100" role="menuitem">
+                                            <Cog6ToothIcon className="w-5 h-5 text-slate-500"/>
+                                            Pengaturan Akun
+                                        </a>
+                                        <a href="#" className="flex items-center gap-3 px-4 py-2 text-sm text-slate-700 hover:bg-slate-100" role="menuitem">
+                                            <KeyIcon className="w-5 h-5 text-slate-500"/>
+                                            Hak Akses
+                                        </a>
+                                    </div>
+                                    <div className="py-1 border-t border-slate-200">
+                                        <button 
+                                            onClick={handleLogoutClick}
+                                            className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50" role="menuitem"
+                                        >
+                                            <LogoutIcon className="w-5 h-5"/>
+                                            Logout
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
