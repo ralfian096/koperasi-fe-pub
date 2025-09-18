@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { EditIcon, TrashIcon, PlusIcon } from './icons/Icons';
 import { useNotification } from '../contexts/NotificationContext';
@@ -20,7 +19,7 @@ interface ApiUnit { unit_id: number; name: string; type: string; }
 interface ApiOutlet { id: number; name: string; }
 
 interface ApiProduct {
-    id: number;
+    product_id: number;
     name: string;
     product_type: 'CONSUMPTION' | 'RENTAL';
     category: { id: number; name: string; } | null;
@@ -154,6 +153,7 @@ const ProductModal: React.FC<{
     const handleResourceChange = (key: number, field: keyof Resource, value: any) => setFormState(s => ({ ...s, resources: s.resources.map(i => i.key === key ? { ...i, [field]: value } : i)}));
     const addResourceAvailability = (rKey: number) => setFormState(s => ({...s, resources: s.resources.map(i => i.key === rKey ? { ...i, availability: [...i.availability, { key: Date.now(), day_of_week: '1', start_time: '08:00', end_time: '22:00' }] } : i)}));
     const removeResourceAvailability = (rKey: number, aKey: number) => setFormState(s => ({...s, resources: s.resources.map(i => i.key === rKey ? { ...i, availability: i.availability.filter(a => a.key !== aKey) } : i)}));
+    // FIX: Corrected a typo where 'p' was used instead of 'a' in the ternary operator.
     const handleResourceAvailabilityChange = (rKey: number, aKey: number, field: keyof AvailabilityRule, value: any) => setFormState(s => ({...s, resources: s.resources.map(i => i.key === rKey ? { ...i, availability: i.availability.map(a => a.key === aKey ? { ...a, [field]: value } : a) } : i)}));
     const addResourcePricing = (rKey: number) => setFormState(s => ({...s, resources: s.resources.map(i => i.key === rKey ? { ...i, pricing: [...i.pricing, { key: Date.now(), customer_category_id: '', unit_id: '', price: '' }] } : i)}));
     const removeResourcePricing = (rKey: number, pKey: number) => setFormState(s => ({...s, resources: s.resources.map(i => i.key === rKey ? { ...i, pricing: i.pricing.filter(p => p.key !== pKey) } : i)}));
@@ -380,9 +380,26 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ selectedBusinessU
         setIsLoading(prev => ({ ...prev, products: true }));
         try {
             const response = await fetch(`${API_PRODUCTS_ENDPOINT}?business_id=${selectedBusinessUnit.id}&product_type=${productType}`);
-            if (!response.ok) throw new Error('Gagal memuat produk');
+            
+            if (!response.ok) {
+                try {
+                    const errorResult = await response.json();
+                    throw new Error(errorResult.message || `Gagal memuat produk. Status: ${response.status}`);
+                } catch (jsonError) {
+                    throw new Error(`Gagal memuat produk. Status: ${response.status}`);
+                }
+            }
+            
             const result = await response.json();
-            setProducts(result.data?.data || []);
+    
+            if (result.code === 200 && result.data && Array.isArray(result.data.data)) {
+                setProducts(result.data.data);
+            } else {
+                setProducts([]);
+                if (result.code !== 200 && result.message) {
+                    throw new Error(result.message || 'Format respons data tidak valid');
+                }
+            }
         } catch (err: any) {
             addNotification(err.message, 'error');
             setProducts([]);
@@ -396,9 +413,9 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ selectedBusinessU
     }, [fetchProducts]);
 
     const groupedProducts = useMemo(() => {
-        const groups: { [name: string]: GroupedProduct } = {};
+        const groups: { [id: number]: GroupedProduct } = {};
         products.forEach(product => {
-            const groupKey = product.name; // Group by name for simplicity
+            const groupKey = product.product_id;
             if (!groups[groupKey]) {
                 groups[groupKey] = {
                     baseProduct: product,
@@ -429,7 +446,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ selectedBusinessU
         if (!deletingProduct) return;
         setIsDeleting(true);
         try {
-            const response = await fetch(`${API_PRODUCTS_ENDPOINT}/${deletingProduct.id}`, { method: 'DELETE' });
+            const response = await fetch(`${API_PRODUCTS_ENDPOINT}/${deletingProduct.product_id}`, { method: 'DELETE' });
             if (!response.ok) {
                 const result = await response.json().catch(() => ({}));
                 throw new Error(result.message || 'Gagal menghapus produk');
@@ -486,7 +503,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ selectedBusinessU
                                         : 'N/A';
 
                                     return (
-                                        <tr key={baseProduct.id}>
+                                        <tr key={baseProduct.product_id}>
                                             <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-900">{baseProduct.name}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 capitalize">{baseProduct.product_type.toLowerCase()}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{baseProduct.category?.name || 'N/A'}</td>

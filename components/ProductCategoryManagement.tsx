@@ -133,22 +133,22 @@ const ProductCategoryManagement: React.FC<ProductCategoryManagementProps> = ({ s
             }
 
             const url = isEditing ? `${API_ENDPOINT}/${editingCategory.id}` : API_ENDPOINT;
-            const method = isEditing ? 'PUT' : 'POST';
             
-            // Menyiapkan payload sesuai dengan aturan API yang diminta
-            const payload: { name: string; business_id: number; id?: number; } = {
-                name: formData.name,
-                business_id: businessId,
-            };
+            const apiFormData = new FormData();
+            apiFormData.append('name', formData.name);
+            apiFormData.append('business_id', String(businessId));
 
+            const httpMethod = 'POST'; 
             if (isEditing) {
-                payload.id = editingCategory.id;
+                apiFormData.append('_method', 'PUT');
             }
 
             const response = await fetch(url, {
-                method,
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify(payload),
+                method: httpMethod,
+                headers: {
+                    'Accept': 'application/json',
+                },
+                body: apiFormData,
             });
 
             const result = await response.json();
