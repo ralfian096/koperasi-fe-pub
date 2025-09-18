@@ -1,7 +1,8 @@
 
+
 import React, { useState, useMemo, useEffect } from 'react';
 import usePosData from '../hooks/usePosData';
-import { Transaction, OperationalCost } from '../types';
+import { Transaction, OperationalCost, BusinessUnit } from '../types';
 
 // Helper to get years for dropdowns
 const generateYears = (transactions: Transaction[], costs: OperationalCost[]): number[] => {
@@ -10,11 +11,14 @@ const generateYears = (transactions: Transaction[], costs: OperationalCost[]): n
     return Array.from(new Set([...transactionYears, ...costYears])).sort((a, b) => b - a);
 };
 
-const ProfitLossReport: React.FC = () => {
-    const { businessUnits, outlets, transactions, operationalCosts, operationalCostCategories } = usePosData();
+interface ProfitLossReportProps {
+  selectedBusinessUnit: BusinessUnit;
+}
+
+const ProfitLossReport: React.FC<ProfitLossReportProps> = ({ selectedBusinessUnit }) => {
+    const { outlets, transactions, operationalCosts, operationalCostCategories } = usePosData();
 
     // State for filters
-    const [selectedUnit, setSelectedUnit] = useState<string>('all');
     const [selectedOutlet, setSelectedOutlet] = useState<string>('all');
     
     // New time filter state
@@ -24,13 +28,12 @@ const ProfitLossReport: React.FC = () => {
     const [yearlyFilter, setYearlyFilter] = useState({ year: new Date().getFullYear() });
 
     const availableOutlets = useMemo(() => {
-        if (selectedUnit === 'all') return outlets;
-        return outlets.filter(o => o.businessUnitId === Number(selectedUnit));
-    }, [selectedUnit, outlets]);
+        return outlets.filter(o => o.businessUnitId === selectedBusinessUnit.id);
+    }, [selectedBusinessUnit, outlets]);
     
     useEffect(() => {
         setSelectedOutlet('all');
-    }, [selectedUnit]);
+    }, [selectedBusinessUnit]);
 
     const costCategoryMap = useMemo(() => 
         operationalCostCategories.reduce((acc, cat) => {
@@ -66,9 +69,7 @@ const ProfitLossReport: React.FC = () => {
         }
 
         let relevantOutletIds: number[];
-        if (selectedUnit === 'all') {
-            relevantOutletIds = outlets.map(o => o.id);
-        } else if (selectedOutlet === 'all') {
+        if (selectedOutlet === 'all') {
             relevantOutletIds = availableOutlets.map(o => o.id);
         } else {
             relevantOutletIds = [Number(selectedOutlet)];
@@ -101,7 +102,7 @@ const ProfitLossReport: React.FC = () => {
         }, {} as Record<string, number>);
 
         return { totalRevenue, totalCosts, profitLoss, costsByCategory };
-    }, [transactions, operationalCosts, selectedUnit, selectedOutlet, timeFilterMode, dailyFilter, monthlyFilter, yearlyFilter, outlets, availableOutlets, costCategoryMap]);
+    }, [transactions, operationalCosts, selectedOutlet, timeFilterMode, dailyFilter, monthlyFilter, yearlyFilter, availableOutlets, costCategoryMap]);
 
     const formatCurrency = (amount: number) => `Rp${amount.toLocaleString('id-ID')}`;
     
@@ -151,11 +152,7 @@ const ProfitLossReport: React.FC = () => {
             {/* Filters */}
             <div className="p-4 bg-white rounded-lg shadow-md space-y-4">
                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                     <select value={selectedUnit} onChange={(e) => setSelectedUnit(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500">
-                        <option value="all">Semua Unit Usaha</option>
-                        {businessUnits.map(unit => <option key={unit.id} value={unit.id}>{unit.name}</option>)}
-                    </select>
-                    <select value={selectedOutlet} onChange={(e) => setSelectedOutlet(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500" disabled={selectedUnit === 'all'}>
+                    <select value={selectedOutlet} onChange={(e) => setSelectedOutlet(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500">
                         <option value="all">Semua Outlet</option>
                         {availableOutlets.map(outlet => <option key={outlet.id} value={outlet.id}>{outlet.name}</option>)}
                     </select>

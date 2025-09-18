@@ -1,8 +1,9 @@
 
+
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNotification } from '../contexts/NotificationContext';
 import CustomerModal from './CustomerModal';
-import { CustomerCategory } from '../types';
+import { CustomerCategory, BusinessUnit } from '../types';
 import { PlusIcon, EditIcon, TrashIcon } from './icons/Icons';
 import ConfirmationModal from './ConfirmationModal';
 
@@ -24,26 +25,22 @@ interface ApiCustomer {
   };
 }
 
-// Tipe data untuk unit bisnis dari API summary
-interface ApiBusinessUnit {
-    id: number;
-    name: string;
-}
-
 const API_BASE_URL = 'https://api.majukoperasiku.my.id/manage';
 
+interface CustomerManagementProps {
+    selectedBusinessUnit: BusinessUnit;
+}
+
 // Main Component
-const CustomerManagement: React.FC = () => {
+const CustomerManagement: React.FC<CustomerManagementProps> = ({ selectedBusinessUnit }) => {
     const { addNotification } = useNotification();
     
     // State untuk data yang diambil dari API
-    const [businessUnits, setBusinessUnits] = useState<ApiBusinessUnit[]>([]);
     const [customers, setCustomers] = useState<ApiCustomer[]>([]);
     const [customerCategories, setCustomerCategories] = useState<CustomerCategory[]>([]);
     
     // State untuk kontrol UI
-    const [selectedUnit, setSelectedUnit] = useState<string>('');
-    const [isLoading, setIsLoading] = useState({ units: true, customers: false, categories: true });
+    const [isLoading, setIsLoading] = useState({ customers: false, categories: true });
     const [error, setError] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingCustomer, setEditingCustomer] = useState<ApiCustomer | null>(null);
@@ -51,42 +48,15 @@ const CustomerManagement: React.FC = () => {
     const [deletingCustomer, setDeletingCustomer] = useState<ApiCustomer | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    // Fetch business units dari API
-    useEffect(() => {
-        const fetchBusinessUnits = async () => {
-            setIsLoading(prev => ({ ...prev, units: true }));
-            try {
-                const response = await fetch(`${API_BASE_URL}/business/summary`);
-                if (!response.ok) throw new Error('Gagal memuat unit bisnis');
-                const result = await response.json();
-                if (result.code === 200 && result.data && Array.isArray(result.data.data)) {
-                    const units: ApiBusinessUnit[] = result.data.data;
-                    setBusinessUnits(units);
-                    if (units.length > 0 && !selectedUnit) {
-                        setSelectedUnit(String(units[0].id));
-                    }
-                } else {
-                    throw new Error(result.message || 'Format data unit bisnis tidak valid');
-                }
-            } catch (err: any) {
-                addNotification(`Gagal memuat data: ${err.message}`, 'error');
-            } finally {
-                setIsLoading(prev => ({ ...prev, units: false }));
-            }
-        };
-        fetchBusinessUnits();
-    }, [addNotification, selectedUnit]);
-
-
     // Fetch customer categories based on selected unit
     const fetchCustomerCategoriesForUnit = useCallback(async () => {
-        if (!selectedUnit) {
+        if (!selectedBusinessUnit) {
             setCustomerCategories([]);
             return;
         }
         setIsLoading(prev => ({ ...prev, categories: true }));
         try {
-            const response = await fetch(`${API_BASE_URL}/customer-category?business_id=${selectedUnit}`);
+            const response = await fetch(`${API_BASE_URL}/customer-category?business_id=${selectedBusinessUnit.id}`);
             if (!response.ok) throw new Error('Gagal memuat kategori customer');
             const result = await response.json();
             if (result.code === 200 && result.data && Array.isArray(result.data.data)) {
@@ -100,7 +70,7 @@ const CustomerManagement: React.FC = () => {
         } finally {
             setIsLoading(prev => ({ ...prev, categories: false }));
         }
-    }, [selectedUnit, addNotification]);
+    }, [selectedBusinessUnit, addNotification]);
 
     useEffect(() => {
         fetchCustomerCategoriesForUnit();
@@ -108,14 +78,14 @@ const CustomerManagement: React.FC = () => {
     
     // Mengambil data customer ketika unit usaha dipilih
     const fetchCustomers = useCallback(async () => {
-        if (!selectedUnit) {
+        if (!selectedBusinessUnit) {
             setCustomers([]);
             return;
         }
         setIsLoading(prev => ({ ...prev, customers: true }));
         setError(null);
         try {
-            const response = await fetch(`${API_BASE_URL}/customers?business_id=${selectedUnit}`);
+            const response = await fetch(`${API_BASE_URL}/customers?business_id=${selectedBusinessUnit.id}`);
             if (!response.ok) throw new Error('Gagal memuat data customer');
             const result = await response.json();
             
@@ -134,7 +104,7 @@ const CustomerManagement: React.FC = () => {
         } finally {
             setIsLoading(prev => ({ ...prev, customers: false }));
         }
-    }, [selectedUnit, addNotification]);
+    }, [selectedBusinessUnit, addNotification]);
 
     useEffect(() => {
         fetchCustomers();
@@ -157,7 +127,7 @@ const CustomerManagement: React.FC = () => {
 
         const payload = {
             ...formData,
-            business_id: Number(selectedUnit),
+            business_id: selectedBusinessUnit.id,
             customer_category_id: formData.customer_category_id ? Number(formData.customer_category_id) : null,
         };
 
@@ -219,29 +189,12 @@ const CustomerManagement: React.FC = () => {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h2 className="text-3xl font-bold text-slate-800">Manajemen Customer</h2>
-                <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-                    <select 
-                        value={selectedUnit} 
-                        onChange={(e) => setSelectedUnit(e.target.value)} 
-                        className="w-full sm:w-auto px-4 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-                        disabled={isLoading.units || businessUnits.length === 0}
-                    >
-                      {isLoading.units ? (
-                          <option>Memuat unit bisnis...</option>
-                      ) : businessUnits.length === 0 ? (
-                          <option>Tidak ada unit bisnis</option>
-                      ) : (
-                        businessUnits.map(unit => <option key={unit.id} value={unit.id}>{unit.name}</option>)
-                      )}
-                    </select>
-                </div>
             </div>
 
              <div className="flex justify-end">
                 <button 
                     onClick={() => handleOpenModal()}
-                    className={`flex items-center px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition ${!selectedUnit ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    disabled={!selectedUnit}
+                    className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition"
                 >
                     <PlusIcon className="w-5 h-5 mr-2"/>
                     Tambah Customer
@@ -287,7 +240,7 @@ const CustomerManagement: React.FC = () => {
                             ) : (
                                 <tr>
                                     <td colSpan={6} className="text-center py-10 text-slate-500">
-                                        {selectedUnit ? 'Tidak ada customer untuk unit usaha ini.' : 'Silakan pilih unit usaha.'}
+                                        {selectedBusinessUnit ? 'Tidak ada customer untuk unit usaha ini.' : 'Silakan pilih unit usaha.'}
                                     </td>
                                 </tr>
                             )}

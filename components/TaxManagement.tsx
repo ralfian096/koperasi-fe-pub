@@ -1,34 +1,20 @@
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { EditIcon, TrashIcon, PlusIcon } from './icons/Icons';
 import { useNotification } from '../contexts/NotificationContext';
 import ConfirmationModal from './ConfirmationModal';
+import { BusinessUnit } from '../types';
 
 // Local types to match API responses
 interface ApiTax {
     id: number;
-    outlet_id: number;
     name: string;
     rate: string;
     type: 'PERCENTAGE' | 'FIXED';
     description: string | null;
     is_active: number; // 0 or 1
-    outlet: {
-        id: number;
-        name: string;
-    };
 }
 
-interface ApiBusinessUnit {
-    id: number;
-    name: string;
-    outlets: {
-        id: number;
-        name: string;
-    }[];
-}
-
-const API_BUSINESS_SUMMARY_ENDPOINT = 'https://api.majukoperasiku.my.id/manage/business/summary';
 const API_TAXES_ENDPOINT = 'https://api.majukoperasiku.my.id/manage/taxes';
 
 // Modal Component for Tax
@@ -78,7 +64,8 @@ const TaxModal: React.FC<{
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const finalValue = name === 'is_active' ? Number(value) : value;
+    setFormData(prev => ({ ...prev, [name]: finalValue }));
   };
 
   return (
@@ -126,18 +113,19 @@ const TaxModal: React.FC<{
   );
 };
 
+interface TaxManagementProps {
+    selectedBusinessUnit: BusinessUnit;
+}
+
 // Main Component
-const TaxManagement: React.FC = () => {
+const TaxManagement: React.FC<TaxManagementProps> = ({ selectedBusinessUnit }) => {
     const { addNotification } = useNotification();
     
     // API State
-    const [businessUnits, setBusinessUnits] = useState<ApiBusinessUnit[]>([]);
     const [taxes, setTaxes] = useState<ApiTax[]>([]);
-    const [isLoading, setIsLoading] = useState({ units: true, taxes: false });
+    const [isLoading, setIsLoading] = useState({ taxes: false });
     
     // UI State
-    const [selectedUnit, setSelectedUnit] = useState<string>('');
-    const [selectedOutlet, setSelectedOutlet] = useState<string>('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingTax, setEditingTax] = useState<ApiTax | null>(null);
 
@@ -145,63 +133,15 @@ const TaxManagement: React.FC = () => {
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [deletingTax, setDeletingTax] = useState<ApiTax | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
-
-    useEffect(() => {
-        const fetchBusinessUnitsAndOutlets = async () => {
-            setIsLoading(prev => ({ ...prev, units: true }));
-            try {
-                const response = await fetch(API_BUSINESS_SUMMARY_ENDPOINT);
-                if (!response.ok) throw new Error('Gagal memuat data unit bisnis');
-                const result = await response.json();
-                if (result.code === 200 && result.data && Array.isArray(result.data.data)) {
-                    setBusinessUnits(result.data.data);
-                    if (result.data.data.length > 0) {
-                        const firstUnit = result.data.data[0];
-                        const firstUnitId = String(firstUnit.id);
-                        setSelectedUnit(firstUnitId);
-                        if (firstUnit.outlets && firstUnit.outlets.length > 0) {
-                            setSelectedOutlet(String(firstUnit.outlets[0].id));
-                        } else {
-                            setSelectedOutlet('');
-                        }
-                    }
-                } else {
-                    throw new Error(result.message || 'Format data tidak valid');
-                }
-            } catch (err: any) {
-                addNotification(`Gagal memuat data: ${err.message}`, 'error');
-            } finally {
-                setIsLoading(prev => ({ ...prev, units: false }));
-            }
-        };
-        fetchBusinessUnitsAndOutlets();
-    }, [addNotification]);
     
-    const availableOutlets = useMemo(() => {
-        if (!selectedUnit) return [];
-        const unit = businessUnits.find(u => u.id === Number(selectedUnit));
-        return unit?.outlets || [];
-    }, [selectedUnit, businessUnits]);
-
-    useEffect(() => {
-        if (availableOutlets.length > 0) {
-            const currentOutletExists = availableOutlets.some(o => o.id === Number(selectedOutlet));
-            if (!currentOutletExists) {
-                setSelectedOutlet(String(availableOutlets[0].id));
-            }
-        } else {
-            setSelectedOutlet('');
-        }
-    }, [selectedUnit, availableOutlets, selectedOutlet]);
-
     const fetchTaxes = useCallback(async () => {
-        if (!selectedOutlet) {
+        if (!selectedBusinessUnit) {
             setTaxes([]);
             return;
         }
         setIsLoading(prev => ({ ...prev, taxes: true }));
         try {
-            const response = await fetch(`${API_TAXES_ENDPOINT}?outlet_id=${selectedOutlet}`);
+            const response = await fetch(`${API_TAXES_ENDPOINT}?business_id=${selectedBusinessUnit.id}`);
             if (!response.ok) throw new Error('Gagal memuat data pajak');
             const result = await response.json();
             if (result.code === 200 && result.data && Array.isArray(result.data.data)) {
@@ -215,7 +155,7 @@ const TaxManagement: React.FC = () => {
         } finally {
             setIsLoading(prev => ({ ...prev, taxes: false }));
         }
-    }, [selectedOutlet, addNotification]);
+    }, [selectedBusinessUnit, addNotification]);
 
     useEffect(() => {
         fetchTaxes();
@@ -230,7 +170,7 @@ const TaxManagement: React.FC = () => {
         const isEditing = !!editingTax;
         const url = isEditing ? `${API_TAXES_ENDPOINT}/${editingTax.id}` : API_TAXES_ENDPOINT;
         const method = isEditing ? 'PUT' : 'POST';
-        const payload = { ...formData, outlet_id: Number(selectedOutlet) };
+        const payload = { ...formData, business_id: selectedBusinessUnit.id };
         if(isEditing) payload.id = editingTax.id;
 
         try {
@@ -289,18 +229,10 @@ const TaxManagement: React.FC = () => {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h2 className="text-3xl font-bold text-slate-800">Manajemen Pajak</h2>
-                <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-                    <select value={selectedUnit} onChange={(e) => setSelectedUnit(e.target.value)} disabled={isLoading.units} className="w-full sm:w-auto px-4 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500">
-                      {isLoading.units ? <option>Memuat...</option> : businessUnits.map(unit => <option key={unit.id} value={unit.id}>{unit.name}</option>)}
-                    </select>
-                    <select value={selectedOutlet} onChange={(e) => setSelectedOutlet(e.target.value)} disabled={isLoading.units || availableOutlets.length === 0} className="w-full sm:w-auto px-4 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500">
-                       {availableOutlets.length > 0 ? availableOutlets.map(o => <option key={o.id} value={o.id}>{o.name}</option>) : <option>Pilih Unit Usaha</option>}
-                    </select>
-                </div>
             </div>
             
             <div className="flex justify-end">
-                <button onClick={() => handleOpenModal()} disabled={!selectedOutlet} className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                <button onClick={() => handleOpenModal()} disabled={!selectedBusinessUnit} className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
                     <PlusIcon className="w-5 h-5 mr-2"/>
                     Tambah Pajak
                 </button>
@@ -312,7 +244,6 @@ const TaxManagement: React.FC = () => {
                         <thead className="bg-slate-50">
                             <tr>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Nama Pajak</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Outlet</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Rate</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Tipe</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
@@ -321,11 +252,10 @@ const TaxManagement: React.FC = () => {
                         </thead>
                         <tbody className="bg-white divide-y divide-slate-200">
                             {isLoading.taxes ? (
-                                <tr><td colSpan={6} className="text-center py-10 text-slate-500">Memuat data pajak...</td></tr>
+                                <tr><td colSpan={5} className="text-center py-10 text-slate-500">Memuat data pajak...</td></tr>
                             ) : taxes.length > 0 ? taxes.map((tax) => (
                                 <tr key={tax.id}>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{tax.name}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{tax.outlet.name}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{formatRate(tax)}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{tax.type === 'PERCENTAGE' ? 'Persentase' : 'Fixed'}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
@@ -340,8 +270,8 @@ const TaxManagement: React.FC = () => {
                                 </tr>
                             )) : (
                                 <tr>
-                                    <td colSpan={6} className="text-center py-10 text-slate-500">
-                                        {selectedOutlet ? 'Tidak ada data pajak untuk outlet ini.' : 'Silakan pilih outlet.'}
+                                    <td colSpan={5} className="text-center py-10 text-slate-500">
+                                        Tidak ada data pajak untuk unit usaha ini.
                                     </td>
                                 </tr>
                             )}

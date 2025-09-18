@@ -1,12 +1,12 @@
+
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { EditIcon, TrashIcon, PlusIcon } from './icons/Icons';
 import { useNotification } from '../contexts/NotificationContext';
 import ConfirmationModal from './ConfirmationModal';
+import { BusinessUnit } from '../types';
 
 // --- API Endpoints ---
 const API_BASE_URL = 'https://api.majukoperasiku.my.id/manage';
-const API_BUSINESS_SUMMARY_ENDPOINT = `${API_BASE_URL}/business/summary`;
-const API_OUTLETS_ENDPOINT = `${API_BASE_URL}/outlets`;
 const API_PRODUCTS_ENDPOINT = `${API_BASE_URL}/products`;
 const API_PRODUCT_CATEGORIES_ENDPOINT = `${API_BASE_URL}/product-categories`;
 const API_CUSTOMER_CATEGORIES_ENDPOINT = `${API_BASE_URL}/customer-category`;
@@ -14,12 +14,6 @@ const API_UNITS_ENDPOINT = `${API_BASE_URL}/units`;
 
 
 // --- Type Definitions for API data ---
-interface ApiBusinessUnit {
-    id: number;
-    name: string;
-    outlets: { id: number; name: string }[];
-}
-
 interface ApiProductCategory { id: number; name: string; }
 interface ApiCustomerCategory { id: number; name: string; }
 interface ApiUnit { unit_id: number; name: string; type: string; }
@@ -32,8 +26,14 @@ interface ApiProduct {
     category: { id: number; name: string; } | null;
     variants: any[]; // Simplified for list view
     resources: any[]; // Simplified for list view
-    outlet?: { id: number; name: string }; // Optional for list view
+    outlet?: ApiOutlet; // From API, each row has one outlet
 }
+
+interface GroupedProduct {
+    baseProduct: ApiProduct;
+    outlets: ApiOutlet[];
+}
+
 
 // --- Local State Types for Form ---
 type PricingRule = { key: number; customer_category_id: string; price: string; unit_id: string };
@@ -47,8 +47,9 @@ const initialFormState = {
     description: '',
     product_type: 'CONSUMPTION' as 'CONSUMPTION' | 'RENTAL',
     category_id: '',
-    variants: [{ key: Date.now(), name: '', sku: '', stock_quantity: '', pricing: [{ key: Date.now(), customer_category_id: '', unit_id: '', price: '' }] }],
+    variants: [],
     resources: [],
+    outlet_ids: [] as number[],
 };
 
 
@@ -57,18 +58,30 @@ const ProductModal: React.FC<{
     onClose: () => void;
     onSave: () => void;
     businessUnitId: string;
-}> = ({ isOpen, onClose, onSave, businessUnitId }) => {
+    productType: 'CONSUMPTION' | 'RENTAL';
+    outletsForBusiness: ApiOutlet[];
+}> = ({ isOpen, onClose, onSave, businessUnitId, productType, outletsForBusiness }) => {
     
     const { addNotification } = useNotification();
     const [isLoading, setIsLoading] = useState(false);
-    const [formState, setFormState] = useState(() => ({...initialFormState, business_id: businessUnitId}));
+    
+    const getInitialState = useCallback(() => {
+        return {
+            ...initialFormState,
+            business_id: businessUnitId,
+            product_type: productType,
+            variants: productType === 'CONSUMPTION' ? [{ key: Date.now(), name: '', sku: '', stock_quantity: '', pricing: [{ key: Date.now(), customer_category_id: '', unit_id: '', price: '' }] }] : [],
+            resources: productType === 'RENTAL' ? [{ key: Date.now(), name: '', availability: [{ key: Date.now(), day_of_week: '1', start_time: '08:00', end_time: '22:00' }], pricing: [{ key: Date.now(), customer_category_id: '', unit_id: '', price: '' }] }] : [],
+            outlet_ids: [],
+        };
+    }, [businessUnitId, productType]);
+
+    const [formState, setFormState] = useState(getInitialState);
     
     // Dropdown data states
     const [productCategories, setProductCategories] = useState<ApiProductCategory[]>([]);
     const [customerCategories, setCustomerCategories] = useState<ApiCustomerCategory[]>([]);
     const [units, setUnits] = useState<ApiUnit[]>([]);
-    const [outletsForBusiness, setOutletsForBusiness] = useState<ApiOutlet[]>([]);
-    const [outletForCategory, setOutletForCategory] = useState('');
 
     const daysOfWeek = [
         { value: '1', label: 'Senin' }, { value: '2', label: 'Selasa' }, { value: '3', label: 'Rabu' },
@@ -78,15 +91,17 @@ const ProductModal: React.FC<{
 
     // Fetch dependent data on modal open
     useEffect(() => {
-        if (!isOpen || !businessUnitId) return;
+        if (!isOpen) return;
+
+        setFormState(getInitialState()); // Reset state every time modal opens
 
         const fetchDependencies = async () => {
              setIsLoading(true);
             try {
-                const [custCatRes, unitRes, outletsRes] = await Promise.all([
+                const [custCatRes, unitRes, prodCatRes] = await Promise.all([
                     fetch(`${API_CUSTOMER_CATEGORIES_ENDPOINT}?business_id=${businessUnitId}`),
                     fetch(API_UNITS_ENDPOINT),
-                    fetch(`${API_OUTLETS_ENDPOINT}?business_id=${businessUnitId}`),
+                    fetch(`${API_PRODUCT_CATEGORIES_ENDPOINT}?business_id=${businessUnitId}`),
                 ]);
 
                 const custCatResult = await custCatRes.json();
@@ -95,12 +110,8 @@ const ProductModal: React.FC<{
                 const unitResult = await unitRes.json();
                 setUnits(unitResult.data?.data || []);
                 
-                const outletsResult = await outletsRes.json();
-                const fetchedOutlets = outletsResult.data?.data || [];
-                setOutletsForBusiness(fetchedOutlets);
-                if (fetchedOutlets.length > 0) {
-                    setOutletForCategory(String(fetchedOutlets[0].id));
-                }
+                const prodCatResult = await prodCatRes.json();
+                setProductCategories(prodCatResult.data?.data || []);
 
             } catch (err: any) {
                 addNotification(`Gagal memuat data pendukung: ${err.message}`, 'error');
@@ -110,33 +121,9 @@ const ProductModal: React.FC<{
             }
         };
         fetchDependencies();
-    }, [isOpen, businessUnitId, addNotification, onClose]);
-
-    // Fetch product categories when the selected outlet for categories changes
-    useEffect(() => {
-        if (!outletForCategory) {
-            setProductCategories([]);
-            return;
-        }
-        const fetchCategories = async () => {
-            try {
-                const catRes = await fetch(`${API_PRODUCT_CATEGORIES_ENDPOINT}?outlet_id=${outletForCategory}`);
-                const catResult = await catRes.json();
-                setProductCategories(catResult.data?.data || []);
-            } catch (err: any) {
-                addNotification(`Gagal memuat kategori produk: ${err.message}`, 'error');
-            }
-        }
-        fetchCategories();
-    }, [outletForCategory, addNotification]);
-
-    const resetState = useCallback(() => {
-        setFormState({...initialFormState, business_id: businessUnitId});
-        setOutletForCategory('');
-    }, [businessUnitId]);
+    }, [isOpen, businessUnitId, addNotification, onClose, getInitialState]);
 
     const handleClose = () => {
-        resetState();
         onClose();
     };
     
@@ -144,15 +131,14 @@ const ProductModal: React.FC<{
     const handleFormChange = (field: keyof typeof formState, value: any) => {
         setFormState(prev => ({ ...prev, [field]: value }));
     };
-
-    const handleProductTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const type = e.target.value as 'CONSUMPTION' | 'RENTAL';
-        setFormState(prev => ({
-            ...prev,
-            product_type: type,
-            variants: type === 'CONSUMPTION' ? [{ key: Date.now(), name: '', sku: '', stock_quantity: '', pricing: [{ key: Date.now(), customer_category_id: '', unit_id: '', price: '' }] }] : [],
-            resources: type === 'RENTAL' ? [{ key: Date.now(), name: '', availability: [{ key: Date.now(), day_of_week: '1', start_time: '08:00', end_time: '22:00' }], pricing: [{ key: Date.now(), customer_category_id: '', unit_id: '', price: '' }] }] : [],
-        }));
+    
+    const handleOutletSelectionChange = (outletId: number) => {
+        setFormState(prev => {
+            const newOutletIds = prev.outlet_ids.includes(outletId)
+                ? prev.outlet_ids.filter(id => id !== outletId)
+                : [...prev.outlet_ids, outletId];
+            return { ...prev, outlet_ids: newOutletIds };
+        });
     };
 
     // --- Dynamic Handlers for Nested Arrays ---
@@ -176,6 +162,10 @@ const ProductModal: React.FC<{
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (formState.outlet_ids.length === 0) {
+            addNotification('Pilih minimal satu outlet ketersediaan.', 'error');
+            return;
+        }
         setIsLoading(true);
 
         try {
@@ -185,6 +175,7 @@ const ProductModal: React.FC<{
                 name: formState.name,
                 product_type: formState.product_type,
                 description: formState.description || null,
+                outlet_ids: formState.outlet_ids,
             };
 
             if (formState.product_type === 'CONSUMPTION') {
@@ -237,10 +228,12 @@ const ProductModal: React.FC<{
 
     if (!isOpen) return null;
     
+    const modalTitle = productType === 'CONSUMPTION' ? 'Tambah Barang Baru' : 'Tambah Produk Sewa Baru';
+    
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start z-50 p-4">
         <div className="bg-white rounded-lg shadow-xl my-8 p-6 w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold mb-6 text-slate-800">Tambah Produk Baru</h2>
+            <h2 className="text-2xl font-bold mb-6 text-slate-800">{modalTitle}</h2>
             <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Bagian 1: Informasi Dasar */}
                 <div className="p-4 border rounded-lg">
@@ -255,26 +248,27 @@ const ProductModal: React.FC<{
                             <label className="block text-sm font-medium text-slate-600">Deskripsi</label>
                             <textarea value={formState.description} onChange={e => handleFormChange('description', e.target.value)} rows={2} className="input" />
                         </div>
-                        <fieldset>
-                            <legend className="block text-sm font-medium text-slate-600 mb-1">Jenis Produk *</legend>
-                            <div className="flex gap-4">
-                                <label className="flex items-center"><input type="radio" name="product_type" value="CONSUMPTION" checked={formState.product_type === 'CONSUMPTION'} onChange={handleProductTypeChange} className="radio" /> <span className="ml-2">Barang (Consumption)</span></label>
-                                <label className="flex items-center"><input type="radio" name="product_type" value="RENTAL" checked={formState.product_type === 'RENTAL'} onChange={handleProductTypeChange} className="radio" /> <span className="ml-2">Sewa (Rental)</span></label>
-                            </div>
-                        </fieldset>
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-600">Outlet (untuk Kategori)</label>
-                                <select value={outletForCategory} onChange={e => setOutletForCategory(e.target.value)} className="input" disabled={outletsForBusiness.length === 0}>
-                                    {outletsForBusiness.length > 0 ? outletsForBusiness.map(o => <option key={o.id} value={o.id}>{o.name}</option>) : <option>Tidak ada outlet</option>}
-                                </select>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-600">Kategori Produk</label>
-                                <select value={formState.category_id} onChange={e => handleFormChange('category_id', e.target.value)} className="input" disabled={!outletForCategory}>
-                                    <option value="">Tanpa Kategori</option>
-                                    {productCategories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
-                                </select>
+                         <div>
+                            <label className="block text-sm font-medium text-slate-600">Kategori Produk</label>
+                            <select value={formState.category_id} onChange={e => handleFormChange('category_id', e.target.value)} className="input">
+                                <option value="">Tanpa Kategori</option>
+                                {productCategories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-slate-600 mb-2">Ketersediaan Outlet *</label>
+                            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-3 border rounded-md max-h-40 overflow-y-auto">
+                                {outletsForBusiness.map(outlet => (
+                                     <label key={outlet.id} className="flex items-center space-x-2 p-2 rounded-md hover:bg-slate-50 cursor-pointer">
+                                        <input 
+                                            type="checkbox"
+                                            checked={formState.outlet_ids.includes(outlet.id)}
+                                            onChange={() => handleOutletSelectionChange(outlet.id)}
+                                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        <span className="text-sm text-slate-700">{outlet.name}</span>
+                                    </label>
+                                ))}
                             </div>
                         </div>
                     </div>
@@ -360,76 +354,32 @@ const ProductModal: React.FC<{
     );
 };
 
+interface ProductManagementProps {
+  selectedBusinessUnit: BusinessUnit;
+  productType: 'CONSUMPTION' | 'RENTAL';
+}
 
-const ProductManagement: React.FC = () => {
+const ProductManagement: React.FC<ProductManagementProps> = ({ selectedBusinessUnit, productType }) => {
     const { addNotification } = useNotification();
     
     // Data state
-    const [businessUnits, setBusinessUnits] = useState<ApiBusinessUnit[]>([]);
     const [products, setProducts] = useState<ApiProduct[]>([]);
     
     // UI state
-    const [isLoading, setIsLoading] = useState({ units: true, products: false });
-    const [selectedUnit, setSelectedUnit] = useState<string>('');
-    const [selectedOutlet, setSelectedOutlet] = useState<string>('');
+    const [isLoading, setIsLoading] = useState({ products: false });
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [deletingProduct, setDeletingProduct] = useState<ApiProduct | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    const availableOutlets = useMemo(() => {
-        if (!selectedUnit) return [];
-        const unit = businessUnits.find(u => u.id === Number(selectedUnit));
-        return unit?.outlets || [];
-    }, [selectedUnit, businessUnits]);
-
-    // Fetch Business Units for filter
-    useEffect(() => {
-        const fetchBusinessUnits = async () => {
-            setIsLoading(prev => ({ ...prev, units: true }));
-            try {
-                const response = await fetch(API_BUSINESS_SUMMARY_ENDPOINT);
-                if (!response.ok) throw new Error('Gagal memuat unit bisnis');
-                const result = await response.json();
-                if (result.code === 200 && result.data?.data) {
-                    setBusinessUnits(result.data.data);
-                    if (result.data.data.length > 0) {
-                        const firstUnitId = String(result.data.data[0].id);
-                         if (!selectedUnit) {
-                            setSelectedUnit(firstUnitId);
-                         }
-                    }
-                } else {
-                    throw new Error(result.message || 'Format data tidak valid');
-                }
-            } catch (err: any) {
-                addNotification(err.message, 'error');
-            } finally {
-                setIsLoading(prev => ({ ...prev, units: false }));
-            }
-        };
-        fetchBusinessUnits();
-    }, [addNotification, selectedUnit]);
-
-    useEffect(() => {
-        if (availableOutlets.length > 0) {
-            const currentOutletExists = availableOutlets.some(o => o.id === Number(selectedOutlet));
-            if (!currentOutletExists) {
-                setSelectedOutlet(String(availableOutlets[0].id));
-            }
-        } else {
-            setSelectedOutlet('');
-        }
-    }, [availableOutlets, selectedOutlet]);
-    
     const fetchProducts = useCallback(async () => {
-        if (!selectedOutlet) {
+        if (!selectedBusinessUnit) {
             setProducts([]);
             return;
         }
         setIsLoading(prev => ({ ...prev, products: true }));
         try {
-            const response = await fetch(`${API_PRODUCTS_ENDPOINT}?outlet_id=${selectedOutlet}`);
+            const response = await fetch(`${API_PRODUCTS_ENDPOINT}?business_id=${selectedBusinessUnit.id}&product_type=${productType}`);
             if (!response.ok) throw new Error('Gagal memuat produk');
             const result = await response.json();
             setProducts(result.data?.data || []);
@@ -439,11 +389,28 @@ const ProductManagement: React.FC = () => {
         } finally {
             setIsLoading(prev => ({ ...prev, products: false }));
         }
-    }, [selectedOutlet, addNotification]);
+    }, [selectedBusinessUnit, addNotification, productType]);
 
     useEffect(() => {
         fetchProducts();
     }, [fetchProducts]);
+
+    const groupedProducts = useMemo(() => {
+        const groups: { [name: string]: GroupedProduct } = {};
+        products.forEach(product => {
+            const groupKey = product.name; // Group by name for simplicity
+            if (!groups[groupKey]) {
+                groups[groupKey] = {
+                    baseProduct: product,
+                    outlets: [],
+                };
+            }
+            if (product.outlet && !groups[groupKey].outlets.some(o => o.id === product.outlet!.id)) {
+                groups[groupKey].outlets.push(product.outlet);
+            }
+        });
+        return Object.values(groups);
+    }, [products]);
 
     const handleOpenModal = () => {
         setIsModalOpen(true);
@@ -478,24 +445,19 @@ const ProductManagement: React.FC = () => {
         }
     };
     
+    const pageTitle = productType === 'CONSUMPTION' ? 'Manajemen Barang' : 'Manajemen Produk Sewa';
+    const addButtonText = productType === 'CONSUMPTION' ? 'Tambah Barang' : 'Tambah Produk Sewa';
+    
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <h2 className="text-3xl font-bold text-slate-800">Manajemen Produk</h2>
-                <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-                     <select value={selectedUnit} onChange={(e) => setSelectedUnit(e.target.value)} disabled={isLoading.units} className="input">
-                      {isLoading.units ? <option>Memuat...</option> : businessUnits.map(unit => <option key={unit.id} value={unit.id}>{unit.name}</option>)}
-                    </select>
-                    <select value={selectedOutlet} onChange={(e) => setSelectedOutlet(e.target.value)} disabled={!selectedUnit || availableOutlets.length === 0} className="input">
-                       {availableOutlets.length > 0 ? availableOutlets.map(o => <option key={o.id} value={o.id}>{o.name}</option>) : <option>Pilih Unit Usaha</option>}
-                    </select>
-                </div>
+                <h2 className="text-3xl font-bold text-slate-800">{pageTitle}</h2>
             </div>
 
             <div className="flex justify-end">
-                <button onClick={() => handleOpenModal()} disabled={!selectedUnit} className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition disabled:opacity-50">
+                <button onClick={() => handleOpenModal()} disabled={!selectedBusinessUnit} className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition disabled:opacity-50">
                     <PlusIcon className="w-5 h-5 mr-2"/>
-                    Tambah Produk
+                    {addButtonText}
                 </button>
             </div>
 
@@ -514,23 +476,30 @@ const ProductManagement: React.FC = () => {
                         <tbody className="bg-white divide-y divide-slate-200">
                             {isLoading.products ? (
                                 <tr><td colSpan={5} className="text-center py-10 text-slate-500">Memuat produk...</td></tr>
-                            ) : products.length > 0 ? (
-                                products.map((product) => (
-                                <tr key={product.id}>
-                                    <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-900">{product.name}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 capitalize">{product.product_type.toLowerCase()}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{product.category?.name || 'N/A'}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{
-                                        availableOutlets.find(o => o.id === Number(selectedOutlet))?.name || 'N/A'
-                                    }</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button disabled title="Fitur ubah belum tersedia" className="text-slate-400 mr-4 cursor-not-allowed"><EditIcon className="w-5 h-5"/></button>
-                                        <button onClick={() => handleDelete(product)} className="text-red-600 hover:text-red-900"><TrashIcon className="w-5 h-5"/></button>
-                                    </td>
-                                </tr>
-                            ))
+                            ) : groupedProducts.length > 0 ? (
+                                groupedProducts.map((group) => {
+                                    const { baseProduct, outlets } = group;
+                                    const outletDisplay = outlets.length === 1 
+                                        ? outlets[0].name 
+                                        : outlets.length > 1 
+                                        ? `${outlets.length} outlet`
+                                        : 'N/A';
+
+                                    return (
+                                        <tr key={baseProduct.id}>
+                                            <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-900">{baseProduct.name}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 capitalize">{baseProduct.product_type.toLowerCase()}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{baseProduct.category?.name || 'N/A'}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{outletDisplay}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <button disabled title="Fitur ubah belum tersedia" className="text-slate-400 mr-4 cursor-not-allowed"><EditIcon className="w-5 h-5"/></button>
+                                                <button onClick={() => handleDelete(baseProduct)} className="text-red-600 hover:text-red-900"><TrashIcon className="w-5 h-5"/></button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             ) : (
-                                <tr><td colSpan={5} className="text-center py-10 text-slate-500">Tidak ada produk untuk outlet ini.</td></tr>
+                                <tr><td colSpan={5} className="text-center py-10 text-slate-500">Tidak ada data untuk ditampilkan.</td></tr>
                             )}
                         </tbody>
                     </table>
@@ -541,7 +510,9 @@ const ProductManagement: React.FC = () => {
                 isOpen={isModalOpen} 
                 onClose={handleCloseModal} 
                 onSave={fetchProducts} 
-                businessUnitId={selectedUnit}
+                businessUnitId={String(selectedBusinessUnit.id)}
+                productType={productType}
+                outletsForBusiness={selectedBusinessUnit.outlets || []}
             />}
             <ConfirmationModal
                 isOpen={isConfirmModalOpen}

@@ -1,21 +1,11 @@
-import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { ProductCategory } from '../types';
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { ProductCategory, BusinessUnit } from '../types';
 import { EditIcon, TrashIcon, PlusIcon } from './icons/Icons';
 import { useNotification } from '../contexts/NotificationContext';
 import ConfirmationModal from './ConfirmationModal';
 
 const API_ENDPOINT = 'https://api.majukoperasiku.my.id/manage/product-categories';
-const API_BUSINESS_SUMMARY_ENDPOINT = 'https://api.majukoperasiku.my.id/manage/business/summary';
-
-// Type for the business unit summary API response
-interface ApiUnitSummary {
-    id: number;
-    name: string;
-    outlets: {
-        id: number;
-        name: string;
-    }[];
-}
 
 // Modal Component for Category
 const CategoryModal: React.FC<{
@@ -71,16 +61,18 @@ const CategoryModal: React.FC<{
   );
 };
 
+interface ProductCategoryManagementProps {
+    selectedBusinessUnit: BusinessUnit;
+}
+
 // Main Component
-const ProductCategoryManagement: React.FC = () => {
+const ProductCategoryManagement: React.FC<ProductCategoryManagementProps> = ({ selectedBusinessUnit }) => {
     const { addNotification } = useNotification();
     
     // API-driven state
-    const [apiBusinessUnits, setApiBusinessUnits] = useState<ApiUnitSummary[]>([]);
     const [categories, setCategories] = useState<ProductCategory[]>([]);
     
     // Loading states
-    const [isLoadingUnits, setIsLoadingUnits] = useState(true);
     const [isLoadingCategories, setIsLoadingCategories] = useState(false);
 
     // Modal and delete confirmation state
@@ -90,63 +82,14 @@ const ProductCategoryManagement: React.FC = () => {
     const [deletingCategory, setDeletingCategory] = useState<ProductCategory | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    // Filter state
-    const [selectedUnit, setSelectedUnit] = useState<string>('');
-    const [selectedOutlet, setSelectedOutlet] = useState<string>('');
-
-    // Fetch business units for the filter dropdown
-    useEffect(() => {
-        const fetchBusinessUnits = async () => {
-            setIsLoadingUnits(true);
-            try {
-                const response = await fetch(API_BUSINESS_SUMMARY_ENDPOINT);
-                if (!response.ok) throw new Error('Gagal memuat unit bisnis');
-                const result = await response.json();
-                if (result.code === 200 && result.data && Array.isArray(result.data.data)) {
-                    const units: ApiUnitSummary[] = result.data.data;
-                    setApiBusinessUnits(units);
-                    if (units.length > 0) {
-                        setSelectedUnit(current => current || String(units[0].id));
-                    }
-                } else {
-                    throw new Error(result.message || 'Format data unit bisnis tidak valid');
-                }
-            } catch (err: any) {
-                addNotification(`Gagal memuat data: ${err.message}`, 'error');
-            } finally {
-                setIsLoadingUnits(false);
-            }
-        };
-        fetchBusinessUnits();
-    }, [addNotification]);
-    
-    // Derived state for available outlets based on selected business unit
-    const availableOutlets = useMemo(() => {
-        if (!selectedUnit) return [];
-        const unit = apiBusinessUnits.find(u => u.id === Number(selectedUnit));
-        return unit?.outlets || [];
-    }, [selectedUnit, apiBusinessUnits]);
-    
-    // Effect to auto-select an outlet when the unit changes or outlets load
-    useEffect(() => {
-        if (availableOutlets.length > 0) {
-            const currentOutletExists = availableOutlets.some(o => o.id === Number(selectedOutlet));
-            if (!currentOutletExists) {
-                setSelectedOutlet(String(availableOutlets[0].id));
-            }
-        } else {
-            setSelectedOutlet('');
-        }
-    }, [availableOutlets, selectedOutlet]);
-    
     const fetchCategories = useCallback(async () => {
-        if (!selectedUnit || !selectedOutlet) {
+        if (!selectedBusinessUnit) {
             setCategories([]);
             return;
         }
         setIsLoadingCategories(true);
         try {
-            const response = await fetch(`${API_ENDPOINT}?business_id=${selectedUnit}&outlet_id=${selectedOutlet}`);
+            const response = await fetch(`${API_ENDPOINT}?business_id=${selectedBusinessUnit.id}`);
             if (!response.ok) throw new Error('Gagal memuat kategori produk');
             const result = await response.json();
             if (result.code === 200 && result.data && Array.isArray(result.data.data)) {
@@ -163,7 +106,7 @@ const ProductCategoryManagement: React.FC = () => {
         } finally {
             setIsLoadingCategories(false);
         }
-    }, [selectedUnit, selectedOutlet, addNotification]);
+    }, [selectedBusinessUnit, addNotification]);
 
     useEffect(() => {
         fetchCategories();
@@ -183,19 +126,21 @@ const ProductCategoryManagement: React.FC = () => {
     const handleSaveCategory = async (formData: { name: string }) => {
         try {
             const isEditing = !!editingCategory;
-            const businessId = Number(selectedUnit);
+            const businessId = selectedBusinessUnit.id;
 
-            if (!businessId || !selectedOutlet) {
-                throw new Error('Silakan pilih Unit Bisnis dan Outlet terlebih dahulu.');
+            if (!businessId) {
+                throw new Error('Unit Bisnis harus dipilih.');
             }
 
             const url = isEditing ? `${API_ENDPOINT}/${editingCategory.id}` : API_ENDPOINT;
             const method = isEditing ? 'PUT' : 'POST';
-            const payload: any = {
+            
+            // Menyiapkan payload sesuai dengan aturan API yang diminta
+            const payload: { name: string; business_id: number; id?: number; } = {
                 name: formData.name,
                 business_id: businessId,
-                outlet_id: Number(selectedOutlet)
             };
+
             if (isEditing) {
                 payload.id = editingCategory.id;
             }
@@ -250,45 +195,13 @@ const ProductCategoryManagement: React.FC = () => {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                  <h2 className="text-3xl font-bold text-slate-800">Manajemen Kategori Produk</h2>
-                 <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-                    <select
-                      value={selectedUnit}
-                      onChange={(e) => setSelectedUnit(e.target.value)}
-                      disabled={isLoadingUnits || apiBusinessUnits.length === 0}
-                      className="w-full sm:w-auto px-4 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-                    >
-                      {isLoadingUnits ? (
-                          <option>Memuat Unit Bisnis...</option>
-                        ) : apiBusinessUnits.length === 0 ? (
-                          <option>Tidak ada Unit Bisnis</option>
-                        ) : (
-                          apiBusinessUnits.map(unit => (
-                            <option key={unit.id} value={unit.id}>{unit.name}</option>
-                          ))
-                        )}
-                    </select>
-                    <select
-                       value={selectedOutlet}
-                       onChange={(e) => setSelectedOutlet(e.target.value)}
-                       className="w-full sm:w-auto px-4 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-                       disabled={!selectedUnit || availableOutlets.length === 0}
-                    >
-                       {availableOutlets.length > 0 ? (
-                         availableOutlets.map(outlet => (
-                           <option key={outlet.id} value={outlet.id}>{outlet.name}</option>
-                         ))
-                       ) : (
-                         <option>Pilih Unit Bisnis</option>
-                       )}
-                    </select>
-                 </div>
             </div>
             
             <div className="flex justify-end">
                 <button 
                     onClick={() => handleOpenModal()} 
-                    className={`flex items-center px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition ${!selectedOutlet ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    disabled={!selectedOutlet}
+                    className={`flex items-center px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition ${!selectedBusinessUnit ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    disabled={!selectedBusinessUnit}
                 >
                     <PlusIcon className="w-5 h-5 mr-2"/>
                     Tambah Kategori
@@ -320,7 +233,7 @@ const ProductCategoryManagement: React.FC = () => {
                             )) : (
                                 <tr>
                                     <td colSpan={3} className="text-center py-10 text-slate-500">
-                                        {selectedOutlet ? 'Tidak ada kategori untuk outlet ini.' : 'Silakan pilih unit usaha dan outlet.'}
+                                        Tidak ada kategori untuk unit usaha ini.
                                     </td>
                                 </tr>
                             )}

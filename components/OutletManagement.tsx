@@ -1,8 +1,9 @@
 
 
 
+
 import React, { useState, useEffect, useCallback } from 'react';
-import { Outlet } from '../types';
+import { Outlet, BusinessUnit } from '../types';
 import { EditIcon, TrashIcon, PlusIcon } from './icons/Icons';
 import { useNotification } from '../contexts/NotificationContext';
 import ConfirmationModal from './ConfirmationModal';
@@ -22,12 +23,6 @@ interface ApiOutlet {
   };
 }
 
-interface ApiBusinessUnitForFilter {
-  id: number;
-  name: string;
-}
-
-const API_SUMMARY_ENDPOINT = 'https://api.majukoperasiku.my.id/manage/business/summary';
 const API_OUTLETS_ENDPOINT = 'https://api.majukoperasiku.my.id/manage/outlets';
 
 // Modal Component for Outlet
@@ -123,18 +118,19 @@ const OutletModal: React.FC<{
   );
 };
 
+interface OutletManagementProps {
+  selectedBusinessUnit: BusinessUnit;
+}
+
 // Main Component
-const OutletManagement: React.FC = () => {
+const OutletManagement: React.FC<OutletManagementProps> = ({ selectedBusinessUnit }) => {
     const { addNotification } = useNotification();
     
     // API State
-    const [businessUnits, setBusinessUnits] = useState<ApiBusinessUnitForFilter[]>([]);
     const [outlets, setOutlets] = useState<ApiOutlet[]>([]);
-    const [isLoadingUnits, setIsLoadingUnits] = useState(true);
     const [isLoadingOutlets, setIsLoadingOutlets] = useState(false);
     
     // UI State
-    const [selectedUnit, setSelectedUnit] = useState<string>('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingOutlet, setEditingOutlet] = useState<ApiOutlet | null>(null);
 
@@ -143,43 +139,15 @@ const OutletManagement: React.FC = () => {
     const [deletingOutlet, setDeletingOutlet] = useState<ApiOutlet | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    // Fetch Business Units for the filter dropdown
-    const fetchBusinessUnitsForFilter = useCallback(async () => {
-        setIsLoadingUnits(true);
-        try {
-            const response = await fetch(API_SUMMARY_ENDPOINT);
-            if (!response.ok) throw new Error('Gagal memuat unit bisnis');
-            const result = await response.json();
-            if (result.code === 200 && result.data && Array.isArray(result.data.data)) {
-                const units = result.data.data.map((u: any) => ({ id: u.id, name: u.name }));
-                setBusinessUnits(units);
-                if (units.length > 0 && !selectedUnit) {
-                    setSelectedUnit(String(units[0].id));
-                }
-            } else {
-                throw new Error(result.message || 'Format data unit bisnis tidak valid');
-            }
-        } catch (err: any) {
-            addNotification(`Gagal memuat unit bisnis: ${err.message}`, 'error');
-        } finally {
-            setIsLoadingUnits(false);
-        }
-    }, [addNotification, selectedUnit]);
-
-    useEffect(() => {
-        fetchBusinessUnitsForFilter();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
     // Fetch Outlets when a Business Unit is selected
     const fetchOutlets = useCallback(async () => {
-        if (!selectedUnit) {
+        if (!selectedBusinessUnit) {
             setOutlets([]);
             return;
         }
         setIsLoadingOutlets(true);
         try {
-            const response = await fetch(`${API_OUTLETS_ENDPOINT}?business_id=${selectedUnit}`);
+            const response = await fetch(`${API_OUTLETS_ENDPOINT}?business_id=${selectedBusinessUnit.id}`);
             if (!response.ok) throw new Error('Gagal memuat outlet');
             const result = await response.json();
             if (result.code === 200 && result.data && Array.isArray(result.data.data)) {
@@ -194,7 +162,7 @@ const OutletManagement: React.FC = () => {
         } finally {
             setIsLoadingOutlets(false);
         }
-    }, [selectedUnit, addNotification]);
+    }, [selectedBusinessUnit, addNotification]);
 
     useEffect(() => {
         fetchOutlets();
@@ -222,11 +190,11 @@ const OutletManagement: React.FC = () => {
         const payload: { [key: string]: any } = { ...formData };
         
         if (!isEditing) {
-            if (!selectedUnit) {
+            if (!selectedBusinessUnit) {
                 addNotification('Tidak ada unit usaha yang dipilih.', 'error');
                 return Promise.reject(new Error('No business unit selected'));
             }
-            payload.business_id = Number(selectedUnit);
+            payload.business_id = selectedBusinessUnit.id;
         } else {
              payload.id = editingOutlet.id;
         }
@@ -288,27 +256,12 @@ const OutletManagement: React.FC = () => {
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h2 className="text-3xl font-bold text-slate-800">Manajemen Outlet</h2>
-                <select 
-                    value={selectedUnit} 
-                    onChange={(e) => setSelectedUnit(e.target.value)} 
-                    className="w-full sm:w-64 px-4 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-                    disabled={isLoadingUnits || businessUnits.length === 0}
-                >
-                    {isLoadingUnits ? (
-                      <option>Memuat unit bisnis...</option>
-                    ) : businessUnits.length === 0 ? (
-                      <option>Tidak ada unit bisnis</option>
-                    ) : (
-                        businessUnits.map(unit => <option key={unit.id} value={unit.id}>{unit.name}</option>)
-                    )}
-                </select>
             </div>
             
             <div className="flex justify-end">
                 <button 
                     onClick={() => handleOpenModal()} 
-                    className={`flex items-center px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition ${!selectedUnit || businessUnits.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                    disabled={isLoadingUnits || !selectedUnit || businessUnits.length === 0}
+                    className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition"
                 >
                     <PlusIcon className="w-5 h-5 mr-2"/>
                     Tambah Outlet
@@ -354,7 +307,7 @@ const OutletManagement: React.FC = () => {
                             )) : (
                                 <tr>
                                     <td colSpan={5} className="text-center py-10 text-slate-500">
-                                        {isLoadingUnits ? 'Memuat data...' : selectedUnit ? 'Tidak ada outlet untuk unit usaha ini.' : 'Silakan pilih unit usaha.'}
+                                        {selectedBusinessUnit ? 'Tidak ada outlet untuk unit usaha ini.' : 'Silakan pilih unit usaha.'}
                                     </td>
                                 </tr>
                             )}

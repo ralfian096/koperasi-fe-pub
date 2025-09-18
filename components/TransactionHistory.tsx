@@ -1,7 +1,8 @@
 
+
 import React, { useState, useMemo, useEffect } from 'react';
 import usePosData from '../hooks/usePosData';
-import { Transaction } from '../types';
+import { Transaction, BusinessUnit } from '../types';
 
 const TransactionRow: React.FC<{ transaction: Transaction; customerName: string; }> = ({ transaction, customerName }) => {
     // Cari nama outlet berdasarkan outletId
@@ -34,10 +35,13 @@ const TransactionRow: React.FC<{ transaction: Transaction; customerName: string;
     );
 };
 
-const TransactionHistory: React.FC = () => {
-    const { businessUnits, outlets, transactions, customers } = usePosData();
+interface TransactionHistoryProps {
+  selectedBusinessUnit: BusinessUnit;
+}
+
+const TransactionHistory: React.FC<TransactionHistoryProps> = ({ selectedBusinessUnit }) => {
+    const { outlets, transactions, customers } = usePosData();
     
-    const [selectedUnit, setSelectedUnit] = useState<string>(String(businessUnits[0]?.id || ''));
     const [selectedOutlet, setSelectedOutlet] = useState<string>('');
     const [startDate, setStartDate] = useState<string>('');
     const [endDate, setEndDate] = useState<string>('');
@@ -58,8 +62,8 @@ const TransactionHistory: React.FC = () => {
     }, [endDate, startDate]);
     
     const availableOutlets = useMemo(() => {
-        return outlets.filter(o => o.businessUnitId === Number(selectedUnit));
-    }, [selectedUnit, outlets]);
+        return outlets.filter(o => o.businessUnitId === selectedBusinessUnit.id);
+    }, [selectedBusinessUnit, outlets]);
     
     useEffect(() => {
         if (availableOutlets.length > 0) {
@@ -70,10 +74,10 @@ const TransactionHistory: React.FC = () => {
         } else {
             setSelectedOutlet('');
         }
-    }, [selectedUnit, availableOutlets, selectedOutlet]);
+    }, [availableOutlets, selectedOutlet]);
 
     const filteredTransactions = useMemo(() => {
-        if (!selectedOutlet) return [];
+        if (selectedOutlet === '') return [];
         
         const start = startDate ? new Date(startDate) : null;
         if(start) start.setHours(0, 0, 0, 0);
@@ -139,23 +143,18 @@ const TransactionHistory: React.FC = () => {
                     {/* Baris 1: Filter Unit & Outlet */}
                     <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                         <select
-                          value={selectedUnit}
-                          onChange={(e) => setSelectedUnit(e.target.value)}
-                          className="w-full sm:w-auto px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-                        >
-                          {businessUnits.map(unit => (
-                            <option key={unit.id} value={unit.id}>{unit.name}</option>
-                          ))}
-                        </select>
-                        <select
                            value={selectedOutlet}
                            onChange={(e) => setSelectedOutlet(e.target.value)}
                            className="w-full sm:w-auto px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
                            disabled={availableOutlets.length === 0}
                         >
-                           {availableOutlets.map(outlet => (
-                            <option key={outlet.id} value={outlet.id}>{outlet.name}</option>
-                          ))}
+                           {availableOutlets.length > 0 ? (
+                            availableOutlets.map(outlet => (
+                              <option key={outlet.id} value={outlet.id}>{outlet.name}</option>
+                            ))
+                           ) : (
+                            <option>Tidak ada outlet</option>
+                           )}
                         </select>
                     </div>
                     {/* Baris 2: Filter Tanggal & Status & Metode Pembayaran */}
@@ -253,7 +252,7 @@ const TransactionHistory: React.FC = () => {
                             )) : (
                                 <tr>
                                     <td colSpan={8} className="text-center py-10 text-slate-500">
-                                         {selectedOutlet ? 'Tidak ada transaksi untuk filter ini.' : 'Silakan pilih unit usaha dan outlet.'}
+                                         {selectedOutlet ? 'Tidak ada transaksi untuk filter ini.' : 'Silakan pilih outlet.'}
                                     </td>
                                 </tr>
                             )}
