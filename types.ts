@@ -1,5 +1,6 @@
 
 
+
 export interface BusinessUnit {
   id: number;
   logo: string | null;
@@ -247,6 +248,21 @@ export interface BalanceSheetData {
     liabilities: BalanceSheetSection;
     equity: BalanceSheetSection;
     check_balance: number;
+}
+
+// New types for Laporan Rasio Keuangan / Financial Ratio Analysis
+export interface FinancialRatio {
+    category: 'Likuiditas' | 'Profitabilitas' | 'Solvabilitas' | string;
+    name: string;
+    value: string; // Keep as string to handle percentages or ratios like '1.5x'
+    interpretation: string;
+}
+
+export interface FinancialRatioData {
+    report_name: string;
+    business_id: string;
+    as_of_date: string;
+    ratios: FinancialRatio[];
 }
 
 
