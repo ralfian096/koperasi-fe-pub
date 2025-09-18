@@ -157,3 +157,23 @@ export interface Customer {
   categoryId: string;
   businessUnitId: number;
 }
+
+// New types for Pengajuan RAB
+export interface PengajuanItem {
+  id: number;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+}
+
+export interface Pengajuan {
+  id: number;
+  submission_code: string;
+  title: string;
+  submitted_by: string; // For simplicity, using username string
+  submitted_at: Date;
+  status: 'DRAFT' | 'SUBMITTED' | 'APPROVED' | 'REJECTED' | null;
+  total_amount: number;
+  items: PengajuanItem[];
+}

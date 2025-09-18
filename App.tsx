@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { User, BusinessUnit } from './types';
 import { NotificationProvider } from './contexts/NotificationContext';
 import LoginPage from './components/LoginPage';
@@ -9,7 +10,7 @@ import Dashboard from './components/Dashboard';
 import BusinessUnitSelector from './components/BusinessUnitSelector';
 
 // Placeholders for new main views
-import Pengajuan from './components/placeholders/Pengajuan';
+import Pengajuan from './components/Pengajuan';
 import Keuangan from './components/placeholders/Keuangan';
 import CooperativeManagement from './components/CooperativeManagement';
 import UserManagement from './components/placeholders/UserManagement';
@@ -55,21 +56,77 @@ export type SubView =
 
 
 const App: React.FC = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(() => {
+    const savedUser = localStorage.getItem('currentUser');
+    if (savedUser) {
+      try {
+        return JSON.parse(savedUser);
+      } catch (e) {
+        console.error("Gagal mem-parsing data pengguna dari localStorage", e);
+        localStorage.removeItem('currentUser');
+        return null;
+      }
+    }
+    return null;
+  });
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(!!currentUser);
 
-  const [mainView, setMainView] = useState<MainView>('dashboard');
-  const [subView, setSubView] = useState<SubView | null>(null);
-  const [selectedBusinessUnit, setSelectedBusinessUnit] = useState<BusinessUnit | null>(null);
+  // Initialize view states from localStorage or defaults
+  const [mainView, setMainView] = useState<MainView>(() => {
+    return (localStorage.getItem('mainView') as MainView) || 'dashboard';
+  });
+  const [subView, setSubView] = useState<SubView | null>(() => {
+    return (localStorage.getItem('subView') as SubView) || null;
+  });
+  const [selectedBusinessUnit, setSelectedBusinessUnit] = useState<BusinessUnit | null>(() => {
+    const savedUnit = localStorage.getItem('selectedBusinessUnit');
+    try {
+      return savedUnit ? JSON.parse(savedUnit) : null;
+    } catch (e) {
+      console.error("Failed to parse selectedBusinessUnit from localStorage", e);
+      return null;
+    }
+  });
+
+  // Persist view states to localStorage on change
+  useEffect(() => {
+    localStorage.setItem('mainView', mainView);
+  }, [mainView]);
+
+  useEffect(() => {
+    if (subView) {
+      localStorage.setItem('subView', subView);
+    } else {
+      localStorage.removeItem('subView');
+    }
+  }, [subView]);
+
+  useEffect(() => {
+    if (selectedBusinessUnit) {
+      localStorage.setItem('selectedBusinessUnit', JSON.stringify(selectedBusinessUnit));
+    } else {
+      localStorage.removeItem('selectedBusinessUnit');
+    }
+  }, [selectedBusinessUnit]);
 
   const handleLoginSuccess = (user: User) => {
+    localStorage.setItem('currentUser', JSON.stringify(user));
     setCurrentUser(user);
     setIsAuthenticated(true);
   };
 
   const handleLogout = () => {
+    // Clear auth state and storage
     setCurrentUser(null);
     setIsAuthenticated(false);
+    localStorage.removeItem('currentUser');
+
+    // Clear persisted view state from localStorage
+    localStorage.removeItem('mainView');
+    localStorage.removeItem('subView');
+    localStorage.removeItem('selectedBusinessUnit');
+    
+    // Reset views to default
     setMainView('dashboard');
     setSubView(null);
     setSelectedBusinessUnit(null);

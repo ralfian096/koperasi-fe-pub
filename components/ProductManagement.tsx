@@ -59,11 +59,13 @@ const ProductModal: React.FC<{
     businessUnitId: string;
     productType: 'CONSUMPTION' | 'RENTAL';
     outletsForBusiness: ApiOutlet[];
-}> = ({ isOpen, onClose, onSave, businessUnitId, productType, outletsForBusiness }) => {
+    productToEdit: ApiProduct | null;
+}> = ({ isOpen, onClose, onSave, businessUnitId, productType, outletsForBusiness, productToEdit }) => {
     
     const { addNotification } = useNotification();
     const [isLoading, setIsLoading] = useState(false);
-    
+    const isEditing = !!productToEdit;
+
     const getInitialState = useCallback(() => {
         return {
             ...initialFormState,
@@ -88,13 +90,11 @@ const ProductModal: React.FC<{
         { value: '0', label: 'Minggu' },
     ];
 
-    // Fetch dependent data on modal open
+    // Fetch dependent data and product details on modal open
     useEffect(() => {
         if (!isOpen) return;
-
-        setFormState(getInitialState()); // Reset state every time modal opens
-
-        const fetchDependencies = async () => {
+        
+        const fetchAllDependencies = async () => {
              setIsLoading(true);
             try {
                 const [custCatRes, unitRes, prodCatRes] = await Promise.all([
@@ -111,7 +111,6 @@ const ProductModal: React.FC<{
                 
                 const prodCatResult = await prodCatRes.json();
                 setProductCategories(prodCatResult.data?.data || []);
-
             } catch (err: any) {
                 addNotification(`Gagal memuat data pendukung: ${err.message}`, 'error');
                 onClose();
@@ -119,8 +118,71 @@ const ProductModal: React.FC<{
                 setIsLoading(false);
             }
         };
-        fetchDependencies();
-    }, [isOpen, businessUnitId, addNotification, onClose, getInitialState]);
+
+        const fetchAndSetProductDetails = async () => {
+            if (!productToEdit) return;
+            setIsLoading(true);
+            try {
+                const res = await fetch(`${API_PRODUCTS_ENDPOINT}/${productToEdit.product_id}`);
+                const result = await res.json();
+                if (!res.ok) throw new Error(result.message || 'Gagal memuat detail produk');
+                
+                const productData = result.data;
+                const mappedState = {
+                    business_id: String(productData.business_id),
+                    name: productData.name,
+                    description: productData.description || '',
+                    product_type: productData.product_type,
+                    category_id: productData.category?.id ? String(productData.category.id) : '',
+                    outlet_ids: productData.outlets.map((o: any) => o.id),
+                    variants: (productData.variants || []).map((v: any, index: number) => ({
+                        key: Date.now() + index,
+                        name: v.name,
+                        sku: v.sku || '',
+                        stock_quantity: v.stock_quantity !== null ? String(v.stock_quantity) : '',
+                        pricing: (v.pricing || []).map((p: any, pIndex: number) => ({
+                            key: Date.now() + pIndex + index,
+                            customer_category_id: String(p.customer_category_id),
+                            price: String(parseFloat(p.price)),
+                            unit_id: '' // Not applicable for variants
+                        }))
+                    })),
+                    resources: (productData.resources || []).map((r: any, index: number) => ({
+                        key: Date.now() + index,
+                        name: r.name,
+                        availability: (r.availability || []).map((a: any, aIndex: number) => ({
+                            key: Date.now() + aIndex,
+                            day_of_week: String(a.day_of_week),
+                            start_time: a.start_time,
+                            end_time: a.end_time
+                        })),
+                        pricing: (r.pricing || []).map((p: any, pIndex: number) => ({
+                            key: Date.now() + pIndex,
+                            customer_category_id: String(p.customer_category_id),
+                            price: String(parseFloat(p.price)),
+                            unit_id: String(p.unit_id)
+                        }))
+                    }))
+                };
+                setFormState(mappedState);
+            } catch (err: any) {
+                addNotification(err.message, 'error');
+                onClose();
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchAllDependencies().then(() => {
+            if (isEditing) {
+                fetchAndSetProductDetails();
+            } else {
+                setFormState(getInitialState());
+            }
+        });
+
+    }, [isOpen, businessUnitId, addNotification, onClose, getInitialState, isEditing, productToEdit]);
+
 
     const handleClose = () => {
         onClose();
@@ -167,19 +229,19 @@ const ProductModal: React.FC<{
             return;
         }
         setIsLoading(true);
+        
+        const url = isEditing ? `${API_PRODUCTS_ENDPOINT}/${productToEdit.product_id}` : API_PRODUCTS_ENDPOINT;
+        const httpMethod = 'POST'; // Always POST, use _method for PUT
 
         try {
-            const payload: any = {
+            const payload = {
                 business_id: Number(formState.business_id),
                 category_id: formState.category_id ? Number(formState.category_id) : null,
                 name: formState.name,
                 product_type: formState.product_type,
                 description: formState.description || null,
                 outlet_ids: formState.outlet_ids,
-            };
-
-            if (formState.product_type === 'CONSUMPTION') {
-                payload.variants = formState.variants.map(v => ({
+                variants: formState.product_type === 'CONSUMPTION' ? formState.variants.map(v => ({
                     name: v.name,
                     sku: v.sku || null,
                     stock_quantity: v.stock_quantity ? Number(v.stock_quantity) : null,
@@ -187,9 +249,8 @@ const ProductModal: React.FC<{
                         customer_category_id: Number(p.customer_category_id),
                         price: Number(p.price),
                     })),
-                }));
-            } else { // RENTAL
-                payload.resources = formState.resources.map(r => ({
+                })) : [],
+                resources: formState.product_type === 'RENTAL' ? formState.resources.map(r => ({
                     name: r.name,
                     availability: r.availability.map(a => ({
                         day_of_week: Number(a.day_of_week),
@@ -201,22 +262,57 @@ const ProductModal: React.FC<{
                         unit_id: Number(p.unit_id),
                         price: Number(p.price),
                     })),
-                }));
-            }
-            
-            const res = await fetch(API_PRODUCTS_ENDPOINT, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify(payload),
+                })) : [],
+            };
+
+            const fd = new FormData();
+            if (isEditing) fd.append('_method', 'PUT');
+
+            fd.append('business_id', String(payload.business_id));
+            if (payload.category_id) fd.append('category_id', String(payload.category_id));
+            fd.append('name', payload.name);
+            fd.append('product_type', payload.product_type);
+            if (payload.description) fd.append('description', payload.description);
+
+            payload.outlet_ids.forEach((id, i) => fd.append(`outlet_ids[${i}]`, String(id)));
+
+            payload.variants.forEach((v, vIdx) => {
+                fd.append(`variants[${vIdx}][name]`, v.name);
+                if (v.sku) fd.append(`variants[${vIdx}][sku]`, v.sku);
+                if (v.stock_quantity !== null) fd.append(`variants[${vIdx}][stock_quantity]`, String(v.stock_quantity));
+                v.pricing.forEach((p, pIdx) => {
+                    fd.append(`variants[${vIdx}][pricing][${pIdx}][customer_category_id]`, String(p.customer_category_id));
+                    fd.append(`variants[${vIdx}][pricing][${pIdx}][price]`, String(p.price));
+                });
+            });
+
+            payload.resources.forEach((r, rIdx) => {
+                fd.append(`resources[${rIdx}][name]`, r.name);
+                r.availability.forEach((a, aIdx) => {
+                    fd.append(`resources[${rIdx}][availability][${aIdx}][day_of_week]`, String(a.day_of_week));
+                    fd.append(`resources[${rIdx}][availability][${aIdx}][start_time]`, a.start_time);
+                    fd.append(`resources[${rIdx}][availability][${aIdx}][end_time]`, a.end_time);
+                });
+                r.pricing.forEach((p, pIdx) => {
+                    fd.append(`resources[${rIdx}][pricing][${pIdx}][customer_category_id]`, String(p.customer_category_id));
+                    fd.append(`resources[${rIdx}][pricing][${pIdx}][unit_id]`, String(p.unit_id));
+                    fd.append(`resources[${rIdx}][pricing][${pIdx}][price]`, String(p.price));
+                });
+            });
+
+            const res = await fetch(url, {
+                method: httpMethod,
+                headers: { 'Accept': 'application/json' },
+                body: fd,
             });
 
             const result = await res.json();
             if (!res.ok) {
                 const errorMessages = result.errors ? Object.values(result.errors).flat().join(' ') : result.message;
-                throw new Error(errorMessages || 'Gagal membuat produk');
+                throw new Error(errorMessages || `Gagal ${isEditing ? 'memperbarui' : 'membuat'} produk`);
             }
 
-            addNotification('Produk baru berhasil dibuat!', 'success');
+            addNotification(`Produk berhasil ${isEditing ? 'diperbarui' : 'dibuat'}!`, 'success');
             onSave();
             handleClose();
         } catch (err: any) {
@@ -226,9 +322,12 @@ const ProductModal: React.FC<{
         }
     };
 
+
     if (!isOpen) return null;
     
-    const modalTitle = productType === 'CONSUMPTION' ? 'Tambah Barang Baru' : 'Tambah Produk Sewa Baru';
+    const modalTitle = isEditing 
+        ? (productType === 'CONSUMPTION' ? 'Ubah Barang' : 'Ubah Produk Sewa')
+        : (productType === 'CONSUMPTION' ? 'Tambah Barang Baru' : 'Tambah Produk Sewa Baru');
     
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start z-50 p-4">
@@ -348,7 +447,7 @@ const ProductModal: React.FC<{
                     <button type="submit" disabled={isLoading} className="btn-primary w-40">{isLoading ? 'Menyimpan...' : 'Simpan Produk'}</button>
                 </div>
             </form>
-             <style>{`.input { margin-top: 0.25rem; display: block; width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.375rem; } .radio { color: #dc2626; } .btn-primary { padding: 0.5rem 1rem; background-color: #dc2626; color: white; border-radius: 0.5rem; transition: background-color 0.2s; } .btn-primary:hover { background-color: #b91c1c; } .btn-primary:disabled { background-color: #fca5a5; cursor: not-allowed; } .btn-secondary { padding: 0.5rem 1rem; background-color: #e2e8f0; color: #1e293b; border-radius: 0.5rem; transition: background-color 0.2s; } .btn-secondary:hover { background-color: #cbd5e1; } .btn-secondary:disabled { background-color: #f1f5f9; cursor: not-allowed; } `}</style>
+             <style>{`.input { margin-top: 0.25rem; display: block; width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.375rem; } .radio { color: #dc2626; } .btn-primary { font-size: 0.875rem; line-height: 1.25rem; padding: 0.5rem 1rem; background-color: #dc2626; color: white; border-radius: 0.5rem; transition: background-color 0.2s; } .btn-primary:hover { background-color: #b91c1c; } .btn-primary:disabled { background-color: #fca5a5; cursor: not-allowed; } .btn-secondary { font-size: 0.875rem; line-height: 1.25rem; padding: 0.5rem 1rem; background-color: #e2e8f0; color: #1e293b; border-radius: 0.5rem; transition: background-color 0.2s; } .btn-secondary:hover { background-color: #cbd5e1; } .btn-secondary:disabled { background-color: #f1f5f9; cursor: not-allowed; } `}</style>
         </div>
         </div>
     );
@@ -368,6 +467,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ selectedBusinessU
     // UI state
     const [isLoading, setIsLoading] = useState({ products: false });
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [editingProduct, setEditingProduct] = useState<ApiProduct | null>(null);
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [deletingProduct, setDeletingProduct] = useState<ApiProduct | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
@@ -429,11 +529,13 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ selectedBusinessU
         return Object.values(groups);
     }, [products]);
 
-    const handleOpenModal = () => {
+    const handleOpenModal = (product: ApiProduct | null = null) => {
+        setEditingProduct(product);
         setIsModalOpen(true);
     };
 
     const handleCloseModal = () => {
+        setEditingProduct(null);
         setIsModalOpen(false);
     };
 
@@ -472,7 +574,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ selectedBusinessU
             </div>
 
             <div className="flex justify-end">
-                <button onClick={() => handleOpenModal()} disabled={!selectedBusinessUnit} className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition disabled:opacity-50">
+                <button onClick={() => handleOpenModal()} disabled={!selectedBusinessUnit} className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition disabled:opacity-50 text-sm">
                     <PlusIcon className="w-5 h-5 mr-2"/>
                     {addButtonText}
                 </button>
@@ -504,12 +606,12 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ selectedBusinessU
 
                                     return (
                                         <tr key={baseProduct.product_id}>
-                                            <td className="px-6 py-4 whitespace-nowrap font-medium text-slate-900">{baseProduct.name}</td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{baseProduct.name}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 capitalize">{baseProduct.product_type.toLowerCase()}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{baseProduct.category?.name || 'N/A'}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{outletDisplay}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <button disabled title="Fitur ubah belum tersedia" className="text-slate-400 mr-4 cursor-not-allowed"><EditIcon className="w-5 h-5"/></button>
+                                                <button onClick={() => handleOpenModal(baseProduct)} className="text-indigo-600 hover:text-indigo-900 mr-4"><EditIcon className="w-5 h-5"/></button>
                                                 <button onClick={() => handleDelete(baseProduct)} className="text-red-600 hover:text-red-900"><TrashIcon className="w-5 h-5"/></button>
                                             </td>
                                         </tr>
@@ -530,6 +632,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ selectedBusinessU
                 businessUnitId={String(selectedBusinessUnit.id)}
                 productType={productType}
                 outletsForBusiness={selectedBusinessUnit.outlets || []}
+                productToEdit={editingProduct}
             />}
             <ConfirmationModal
                 isOpen={isConfirmModalOpen}

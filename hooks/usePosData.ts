@@ -1,7 +1,7 @@
 
 
 import { useState, useEffect, useCallback } from 'react';
-import { Product, Transaction, TransactionItem, BusinessUnit, Outlet, Member, Employee, OperationalCost, User, ProductCategory, OperationalCostCategory, Variant, RentalResource, ResourceAvailability, Customer, CustomerCategory } from '../types';
+import { Product, Transaction, TransactionItem, BusinessUnit, Outlet, Member, Employee, OperationalCost, User, ProductCategory, OperationalCostCategory, Variant, RentalResource, ResourceAvailability, Customer, CustomerCategory, Pengajuan, PengajuanItem } from '../types';
 
 // Mock Data Generators
 const generateInitialBusinessUnits = (): BusinessUnit[] => [
@@ -171,7 +171,7 @@ function useLocalStorageState<T>(key: string, generator: () => T): [T, React.Dis
             if (savedItem) {
                  const parsed = JSON.parse(savedItem);
                  if (key === 'pos-transactions' || key === 'pos-members' || key === 'pos-operationalCosts') {
-                     return parsed.map((item: any) => ({ ...item, date: new Date(item.date), joinDate: item.joinDate ? new Date(item.joinDate) : undefined }));
+                     return parsed.map((item: any) => ({ ...item, date: new Date(item.date), joinDate: item.joinDate ? new Date(item.joinDate) : undefined, submission_date: item.submission_date ? new Date(item.submission_date) : undefined }));
                  }
                  return parsed;
             }
@@ -222,7 +222,7 @@ const usePosData = () => {
     const [customers, setCustomers] = useLocalStorageState('pos-customers', () => generateInitialCustomers(businessUnits, customerCategories));
 
     const [transactions, setTransactions] = useLocalStorageState('pos-transactions', () => generateInitialTransactions(products, variants, outlets, customers));
-
+    
     // Product Categories from API
     const [categories, setCategories] = useState<ProductCategory[]>([]);
     const refetchCategories = useCallback(async () => {
@@ -370,7 +370,7 @@ const usePosData = () => {
         
         setProducts(prev => prev.filter(p => p.id !== productId));
     };
-    
+
     // Other CRUDs...
     const addOperationalCost = (cost: Omit<OperationalCost, 'id'>) => {
         const newCost: OperationalCost = { ...cost, id: `cost-${Date.now()}` };
@@ -440,7 +440,7 @@ const usePosData = () => {
         addOperationalCostCategory, updateOperationalCostCategory, deleteOperationalCostCategory,
         addMember, updateMember, deleteMember,
         addCustomerCategory, updateCustomerCategory, deleteCustomerCategory,
-        addCustomer, updateCustomer, deleteCustomer
+        addCustomer, updateCustomer, deleteCustomer,
     };
 };
 
