@@ -30,7 +30,7 @@ import TaxManagement from './components/TaxManagement';
 import ProfitLossReport from './components/ProfitLossReport';
 // Import new placeholder components
 import Jurnal from './components/Jurnal';
-import LaporanNeraca from './components/placeholders/LaporanNeraca';
+import LaporanNeraca from './components/LaporanNeraca';
 import RasioKeuangan from './components/placeholders/RasioKeuangan';
 import ChartOfAccountsManagement from './components/ChartOfAccountsManagement';
 
@@ -173,7 +173,7 @@ const App: React.FC = () => {
       case 'jurnal':
         return <Jurnal selectedBusinessUnit={selectedBusinessUnit} />;
       case 'balance-sheet-report':
-        return <LaporanNeraca />;
+        return <LaporanNeraca selectedBusinessUnit={selectedBusinessUnit} />;
       case 'financial-ratio-report':
         return <RasioKeuangan />;
       case 'chart-of-accounts':

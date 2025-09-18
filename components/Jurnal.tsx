@@ -1,14 +1,18 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { JournalEntry, BusinessUnit } from '../types';
-import { EditIcon, TrashIcon, PlusIcon, EyeIcon } from './icons/Icons';
+import { JournalEntry, BusinessUnit, JournalDetail } from '../types';
+import { TrashIcon, PlusIcon } from './icons/Icons';
 import { useNotification } from '../contexts/NotificationContext';
 import ConfirmationModal from './ConfirmationModal';
 import JurnalModal from './JurnalModal';
 
 const API_ENDPOINT = 'https://api.majukoperasiku.my.id/manage/finance/journal-entries';
 
-const formatCurrency = (amount: string | number) => `Rp${parseFloat(String(amount)).toLocaleString('id-ID')}`;
+const formatNumber = (amount: string | number) => {
+    const num = parseFloat(String(amount));
+    return num.toLocaleString('id-ID');
+};
+
 
 interface JurnalProps {
     selectedBusinessUnit: BusinessUnit;
@@ -36,7 +40,37 @@ const Jurnal: React.FC<JurnalProps> = ({ selectedBusinessUnit }) => {
             if (!response.ok) throw new Error('Gagal memuat entri jurnal');
             const result = await response.json();
             if (result.code === 200 && result.data && Array.isArray(result.data.data)) {
-                setJournals(result.data.data);
+                 const mappedJournals = result.data.data.map((journal: any): JournalEntry => {
+                    let total_debit = 0;
+                    let total_credit = 0;
+                    
+                    journal.details.forEach((detail: any) => {
+                        const amount = parseFloat(detail.amount);
+                        if (detail.entry_type === 'DEBIT') {
+                            total_debit += amount;
+                        } else {
+                            total_credit += amount;
+                        }
+                    });
+
+                    // Create a version compatible with the modal
+                    const itemsForModal = journal.details.map((d: any) => ({
+                        id: d.id,
+                        chart_of_account_id: parseInt(d.account_chart_id, 10),
+                        debit: d.entry_type === 'DEBIT' ? parseFloat(d.amount) : 0,
+                        credit: d.entry_type === 'CREDIT' ? parseFloat(d.amount) : 0,
+                        account: d.account_chart,
+                    }));
+
+                    return {
+                        ...journal,
+                        date: journal.entry_date, // For modal compatibility
+                        total_debit: String(total_debit),
+                        total_credit: String(total_credit),
+                        items: itemsForModal, // Add items for modal
+                    };
+                });
+                setJournals(mappedJournals);
             } else {
                 setJournals([]);
             }
@@ -95,34 +129,42 @@ const Jurnal: React.FC<JurnalProps> = ({ selectedBusinessUnit }) => {
             </div>
             <div className="bg-white rounded-lg shadow-md overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-slate-200">
+                    <table className="min-w-full">
                         <thead className="bg-slate-50">
-                            <tr>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Tanggal</th>
-                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Keterangan</th>
-                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Debit</th>
-                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Kredit</th>
-                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Aksi</th>
+                            <tr className="border-b border-slate-300">
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Tanggal & Deskripsi</th>
+                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider w-48">Debit (IDR)</th>
+                                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider w-48">Kredit (IDR)</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-slate-200">
+                        <tbody className="bg-white">
                             {isLoading ? (
-                                <tr><td colSpan={5} className="text-center py-10 text-slate-500">Memuat data jurnal...</td></tr>
+                                <tr><td colSpan={3} className="text-center py-10 text-slate-500">Memuat data jurnal...</td></tr>
                             ) : journals.length > 0 ? (
                                 journals.map((journal) => (
-                                    <tr key={journal.id} className="hover:bg-slate-50">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{new Date(journal.date).toLocaleDateString('id-ID')}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">{journal.description}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{formatCurrency(journal.total_debit)}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700 text-right">{formatCurrency(journal.total_credit)}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <button onClick={() => handleOpenModal(journal)} className="text-indigo-600 hover:text-indigo-900 mr-4" title="Lihat Detail"><EyeIcon className="w-5 h-5"/></button>
-                                            <button onClick={() => handleDelete(journal)} className="text-red-600 hover:text-red-900" title="Hapus"><TrashIcon className="w-5 h-5"/></button>
-                                        </td>
-                                    </tr>
+                                    <React.Fragment key={journal.id}>
+                                        {/* Row Header Jurnal */}
+                                        <tr className="border-t-4 border-slate-100 border-b border-slate-200">
+                                            <td className="px-6 py-3 align-middle">
+                                                <div className="font-semibold text-slate-800">{journal.entry_date}</div>
+                                            </td>
+                                            <td className="px-6 py-3 align-middle font-medium text-slate-800">{journal.description}</td>
+                                            <td className="px-6 py-3 align-middle text-right">
+                                                <button onClick={() => handleDelete(journal)} className="text-red-500 hover:text-red-700" title="Hapus"><TrashIcon className="w-5 h-5"/></button>
+                                            </td>
+                                        </tr>
+                                        {/* Row Detail Jurnal */}
+                                        {journal.details.map((detail: JournalDetail) => (
+                                            <tr key={detail.id}>
+                                                <td className="pl-12 pr-6 py-2 text-sm text-slate-600">{detail.account_chart.account_name}</td>
+                                                <td className="px-6 py-2 text-sm text-slate-700 text-right">{detail.entry_type === 'DEBIT' ? formatNumber(detail.amount) : '-'}</td>
+                                                <td className="px-6 py-2 text-sm text-slate-700 text-right">{detail.entry_type === 'CREDIT' ? formatNumber(detail.amount) : '-'}</td>
+                                            </tr>
+                                        ))}
+                                    </React.Fragment>
                                 ))
                             ) : (
-                                <tr><td colSpan={5} className="text-center py-10 text-slate-500">Tidak ada entri jurnal untuk unit usaha ini.</td></tr>
+                                <tr><td colSpan={3} className="text-center py-10 text-slate-500">Tidak ada entri jurnal untuk unit usaha ini.</td></tr>
                             )}
                         </tbody>
                     </table>

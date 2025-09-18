@@ -177,24 +177,76 @@ export interface ChartOfAccount {
 }
 
 // New types for Jurnal
-export interface JournalItem {
+export interface JournalDetail {
   id: number;
-  chart_of_account_id: number;
-  debit: number;
-  credit: number;
-  account?: ChartOfAccount;
+  account_chart_id: string;
+  entry_type: 'DEBIT' | 'CREDIT';
+  amount: string;
+  account_chart: ChartOfAccount;
 }
 
+// Compatible type for both API response and local state
 export interface JournalEntry {
   id: number;
-  business_id: number;
-  date: string;
+  business_id: string;
   description: string;
-  total_debit: string;
-  total_credit: string;
-  items: JournalItem[];
+  date: string; // Mapped from entry_date for consistency
+  entry_date: string;
   created_at: string;
   updated_at: string;
+  details: JournalDetail[]; // from API
+  items: { // for modal compatibility
+    id: number;
+    chart_of_account_id: number;
+    debit: number;
+    credit: number;
+    account?: ChartOfAccount;
+  }[];
+  total_debit: string;
+  total_credit: string;
+}
+
+// New types for Laporan Laba Rugi (PHU) / Income Statement
+export interface IncomeStatementAccount {
+    account_code: string;
+    account_name: string;
+    total: number;
+}
+
+export interface IncomeStatementSection {
+    accounts: IncomeStatementAccount[];
+    total: number;
+}
+
+export interface IncomeStatementData {
+    report_name: string;
+    business_id: string;
+    period: string;
+    revenues: IncomeStatementSection;
+    expenses: IncomeStatementSection;
+    net_profit: number;
+}
+
+// New types for Laporan Neraca / Balance Sheet
+export interface BalanceSheetAccount {
+    account_code: string;
+    account_name: string;
+    total: number;
+}
+
+export interface BalanceSheetSection {
+    accounts: BalanceSheetAccount[];
+    total: number;
+}
+
+export interface BalanceSheetData {
+    report_name: string;
+    business_id: string;
+    as_of_date: string;
+    assets: BalanceSheetSection;
+    liabilities: BalanceSheetSection;
+    equity: BalanceSheetSection;
+    check_balance: number;
 }
 
 

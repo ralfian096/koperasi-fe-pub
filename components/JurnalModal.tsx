@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { JournalEntry, ChartOfAccount } from '../types';
 import { useNotification } from '../contexts/NotificationContext';
@@ -134,7 +133,7 @@ const JurnalModal: React.FC<JurnalModalProps> = ({ isOpen, onClose, onSave, jour
         }
 
         if (!description || !date) {
-            addNotification('Tanggal dan Keterangan wajib diisi.', 'error');
+            addNotification('Tanggal dan Deskripsi wajib diisi.', 'error');
             return;
         }
         if (!isBalanced) {
@@ -156,6 +155,7 @@ const JurnalModal: React.FC<JurnalModalProps> = ({ isOpen, onClose, onSave, jour
             business_id: businessUnitId,
             entry_date: date,
             description,
+            account_id: 1,
             details: validItems.map(item => ({
                 account_chart_id: Number(item.chart_of_account_id),
                 entry_type: parseFloat(item.debit) > 0 ? 'DEBIT' : 'CREDIT',
@@ -199,7 +199,7 @@ const JurnalModal: React.FC<JurnalModalProps> = ({ isOpen, onClose, onSave, jour
                                 <input type="date" value={date} onChange={e => setDate(e.target.value)} disabled={isReadOnly || isSubmitting} required className="input"/>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-slate-600">Keterangan *</label>
+                                <label className="block text-sm font-medium text-slate-600">Deskripsi *</label>
                                 <input type="text" value={description} onChange={e => setDescription(e.target.value)} disabled={isReadOnly || isSubmitting} required className="input"/>
                             </div>
                         </div>
