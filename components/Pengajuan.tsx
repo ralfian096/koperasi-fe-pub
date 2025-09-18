@@ -1,7 +1,7 @@
 
 
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
-import { Pengajuan } from '../types';
+import { Pengajuan as PengajuanType } from '../types';
 import { PlusIcon, EditIcon, TrashIcon, EyeIcon } from './icons/Icons';
 import PengajuanModal from './PengajuanModal';
 import ConfirmationModal from './ConfirmationModal';
@@ -26,14 +26,14 @@ const statusStyles: Record<string, string> = {
 const Pengajuan: React.FC = () => {
     const { addNotification } = useNotification();
     
-    const [pengajuanList, setPengajuanList] = useState<Pengajuan[]>([]);
+    const [pengajuanList, setPengajuanList] = useState<PengajuanType[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
     
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [editingPengajuan, setEditingPengajuan] = useState<Pengajuan | null>(null);
+    const [editingPengajuan, setEditingPengajuan] = useState<PengajuanType | null>(null);
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-    const [pengajuanToDelete, setPengajuanToDelete] = useState<Pengajuan | null>(null);
+    const [pengajuanToDelete, setPengajuanToDelete] = useState<PengajuanType | null>(null);
 
     const [statusFilter, setStatusFilter] = useState<string>('all');
 
@@ -47,7 +47,7 @@ const Pengajuan: React.FC = () => {
             }
             const result = await response.json();
             if (result.code === 200 && result.data && Array.isArray(result.data.data)) {
-                const mappedData: Pengajuan[] = result.data.data.map((p: any) => ({
+                const mappedData: PengajuanType[] = result.data.data.map((p: any) => ({
                     ...p,
                     id: p.id,
                     submitted_at: new Date(p.submitted_at),
@@ -78,7 +78,7 @@ const Pengajuan: React.FC = () => {
             .sort((a, b) => b.submitted_at.getTime() - a.submitted_at.getTime());
     }, [pengajuanList, statusFilter]);
 
-    const handleOpenModal = (p: Pengajuan | null = null) => {
+    const handleOpenModal = (p: PengajuanType | null = null) => {
         setEditingPengajuan(p);
         setIsModalOpen(true);
     };
@@ -88,7 +88,7 @@ const Pengajuan: React.FC = () => {
         setEditingPengajuan(null);
     };
     
-    const handleDelete = (p: Pengajuan) => {
+    const handleDelete = (p: PengajuanType) => {
         setPengajuanToDelete(p);
         setIsConfirmOpen(true);
     };
@@ -113,7 +113,7 @@ const Pengajuan: React.FC = () => {
         }
     };
     
-    const handleStatusUpdate = async (p: Pengajuan, newStatus: 'APPROVED' | 'REJECTED') => {
+    const handleStatusUpdate = async (p: PengajuanType, newStatus: 'APPROVED' | 'REJECTED') => {
         setIsSubmitting(true);
          try {
             const response = await fetch(`${API_ENDPOINT}/${p.id}`, {
