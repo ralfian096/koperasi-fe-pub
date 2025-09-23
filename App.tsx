@@ -1,8 +1,4 @@
 
-
-
-
-
 import React, { useState, useEffect } from 'react';
 import { User, BusinessUnit } from './types';
 import { NotificationProvider } from './contexts/NotificationContext';
@@ -125,6 +121,7 @@ const App: React.FC = () => {
     setCurrentUser(null);
     setIsAuthenticated(false);
     localStorage.removeItem('currentUser');
+    sessionStorage.removeItem('authToken'); // Clear the JWT
 
     // Clear persisted view state from localStorage
     localStorage.removeItem('mainView');
@@ -227,7 +224,7 @@ const App: React.FC = () => {
             selectedBusinessUnit={selectedBusinessUnit}
             onSwitchBusinessUnit={() => setSelectedBusinessUnit(null)}
           />
-          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-20 md:pb-6">
             {renderView()}
           </main>
         </div>

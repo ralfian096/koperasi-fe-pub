@@ -44,6 +44,7 @@ export interface ProductCategory {
 // New Product-related interfaces for advanced features
 export interface CategoryPrice {
   // FIX: Changed categoryId from `string` to `string | number` to match the `CustomerCategory` id type.
+  // Fix: Changed categoryId from `string` to `string | number` to match the `CustomerCategory` id type.
   categoryId: string | number;
   price: number;
 }
@@ -140,6 +141,7 @@ export interface User {
     id: string;
     username: string;
     // FIX: Corrected a typo in the password property definition from `password; string;` to `password: string;`.
+    // Fix: Corrected a typo in the password property definition from `password; string;` to `password: string;`.
     password: string;
     role: 'Admin' | 'Manajer' | 'Staf';
 }

@@ -1,6 +1,8 @@
 
 
-import { useState, useEffect, useCallback } from 'react';
+
+
+import { useState, useEffect, useCallback, Dispatch, SetStateAction } from 'react';
 import { Product, Transaction, TransactionItem, BusinessUnit, Outlet, Member, Employee, OperationalCost, User, ProductCategory, OperationalCostCategory, Variant, RentalResource, ResourceAvailability, Customer, CustomerCategory, Pengajuan, PengajuanItem } from '../types';
 
 // Mock Data Generators
@@ -157,6 +159,7 @@ const generateInitialCustomerCategories = (): CustomerCategory[] => [
 
 const generateInitialCustomers = (businessUnits: BusinessUnit[], categories: CustomerCategory[]): Customer[] => [
     // FIX: Changed property name from `phone` to `phone_number` to match the Customer type definition.
+    // Fix: Changed property name from `phone` to `phone_number` to match the Customer type definition.
     { id: 'cust-1', name: 'Rina Marlina', phone_number: '081234567890', categoryId: 'cust-cat-1', businessUnitId: 1 },
     { id: 'cust-2', name: 'Joko Widodo', phone_number: '081298765432', categoryId: 'cust-cat-2', businessUnitId: 1 },
     { id: 'cust-3', name: 'Siti Aminah', phone_number: '085611223344', categoryId: 'cust-cat-1', businessUnitId: 2 },
@@ -164,7 +167,9 @@ const generateInitialCustomers = (businessUnits: BusinessUnit[], categories: Cus
 ];
 
 
-function useLocalStorageState<T>(key: string, generator: () => T): [T, React.Dispatch<React.SetStateAction<T>>] {
+// FIX: Corrected missing React namespace by importing Dispatch and SetStateAction types.
+// Fix: Corrected missing React namespace by importing Dispatch and SetStateAction types.
+function useLocalStorageState<T>(key: string, generator: () => T): [T, Dispatch<SetStateAction<T>>] {
     const [state, setState] = useState<T>(() => {
         try {
             const savedItem = localStorage.getItem(key);
@@ -412,6 +417,7 @@ const usePosData = () => {
         setCustomerCategories(prev => prev.map(c => c.id === updatedCategory.id ? updatedCategory : c));
     };
     // FIX: Changed categoryId parameter type from `string` to `string | number` to match CustomerCategory type.
+    // Fix: Changed categoryId parameter type from `string` to `string | number` to match CustomerCategory type.
     const deleteCustomerCategory = (categoryId: string | number) => {
         setCustomerCategories(prev => prev.filter(c => c.id !== categoryId));
     };

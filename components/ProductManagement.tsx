@@ -216,6 +216,7 @@ const ProductModal: React.FC<{
     const addResourceAvailability = (rKey: number) => setFormState(s => ({...s, resources: s.resources.map(i => i.key === rKey ? { ...i, availability: [...i.availability, { key: Date.now(), day_of_week: '1', start_time: '08:00', end_time: '22:00' }] } : i)}));
     const removeResourceAvailability = (rKey: number, aKey: number) => setFormState(s => ({...s, resources: s.resources.map(i => i.key === rKey ? { ...i, availability: i.availability.filter(a => a.key !== aKey) } : i)}));
     // FIX: Corrected a typo where 'p' was used instead of 'a' in the ternary operator.
+    // Fix: Corrected a typo where 'p' was used instead of 'a' in the ternary operator.
     const handleResourceAvailabilityChange = (rKey: number, aKey: number, field: keyof AvailabilityRule, value: any) => setFormState(s => ({...s, resources: s.resources.map(i => i.key === rKey ? { ...i, availability: i.availability.map(a => a.key === aKey ? { ...a, [field]: value } : a) } : i)}));
     const addResourcePricing = (rKey: number) => setFormState(s => ({...s, resources: s.resources.map(i => i.key === rKey ? { ...i, pricing: [...i.pricing, { key: Date.now(), customer_category_id: '', unit_id: '', price: '' }] } : i)}));
     const removeResourcePricing = (rKey: number, pKey: number) => setFormState(s => ({...s, resources: s.resources.map(i => i.key === rKey ? { ...i, pricing: i.pricing.filter(p => p.key !== pKey) } : i)}));

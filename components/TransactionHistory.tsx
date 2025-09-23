@@ -48,12 +48,15 @@ const TransactionHistory: React.FC<TransactionHistoryProps> = ({ selectedBusines
     const [statusFilter, setStatusFilter] = useState<'all' | 'Selesai' | 'Refund'>('all');
     const [paymentMethodFilter, setPaymentMethodFilter] = useState<'all' | 'Tunai' | 'Kartu Kredit' | 'QRIS'>('all');
 
-    const customerMap = useMemo(() => 
-        customers.reduce((acc, customer) => {
+    const customerMap = useMemo(() => {
+        if (!Array.isArray(customers)) {
+            return {}; // Return empty object if customers is not an array
+        }
+        return customers.reduce((acc, customer) => {
             acc[customer.id] = customer.name;
             return acc;
-        }, {} as Record<string, string>),
-    [customers]);
+        }, {} as Record<string, string>);
+    }, [customers]);
 
     useEffect(() => {
         if (endDate && startDate > endDate) {

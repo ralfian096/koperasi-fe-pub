@@ -1,10 +1,9 @@
 
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNotification } from '../contexts/NotificationContext';
 import CustomerModal from './CustomerModal';
 import { CustomerCategory, BusinessUnit } from '../types';
-import { PlusIcon, EditIcon, TrashIcon } from './icons/Icons';
+import { PlusIcon, EditIcon, TrashIcon, MagnifyingGlassIcon } from './icons/Icons';
 import ConfirmationModal from './ConfirmationModal';
 
 // Tipe data lokal untuk respons API
@@ -25,6 +24,17 @@ interface ApiCustomer {
   };
 }
 
+// Tipe data untuk metadata paginasi dari API
+interface PaginationInfo {
+  current_page: number;
+  next_page_url: string | null;
+  prev_page_url: string | null;
+  per_page: number;
+  total: number;
+  to: number;
+}
+
+
 const API_BASE_URL = 'https://api.majukoperasiku.my.id/manage';
 
 interface CustomerManagementProps {
@@ -39,6 +49,15 @@ const CustomerManagement: React.FC<CustomerManagementProps> = ({ selectedBusines
     const [customers, setCustomers] = useState<ApiCustomer[]>([]);
     const [customerCategories, setCustomerCategories] = useState<CustomerCategory[]>([]);
     
+    // State Paginasi
+    const [pagination, setPagination] = useState<PaginationInfo | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [perPage, setPerPage] = useState(15);
+    
+    // State Pencarian
+    const [searchKeyword, setSearchKeyword] = useState('');
+    const [debouncedKeyword, setDebouncedKeyword] = useState('');
+
     // State untuk kontrol UI
     const [isLoading, setIsLoading] = useState({ customers: false, categories: true });
     const [error, setError] = useState<string | null>(null);
@@ -47,6 +66,18 @@ const CustomerManagement: React.FC<CustomerManagementProps> = ({ selectedBusines
     const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [deletingCustomer, setDeletingCustomer] = useState<ApiCustomer | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    // Debounce effect for search keyword
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedKeyword(searchKeyword);
+            setCurrentPage(1); // Reset page on new search
+        }, 500);
+
+        return () => {
+            clearTimeout(timer);
+        };
+    }, [searchKeyword]);
 
     // Fetch customer categories based on selected unit
     const fetchCustomerCategoriesForUnit = useCallback(async () => {
@@ -76,23 +107,37 @@ const CustomerManagement: React.FC<CustomerManagementProps> = ({ selectedBusines
         fetchCustomerCategoriesForUnit();
     }, [fetchCustomerCategoriesForUnit]);
     
-    // Mengambil data customer ketika unit usaha dipilih
+    // Mengambil data customer ketika unit usaha, halaman, item per halaman, atau keyword berubah
     const fetchCustomers = useCallback(async () => {
         if (!selectedBusinessUnit) {
             setCustomers([]);
+            setPagination(null);
             return;
         }
         setIsLoading(prev => ({ ...prev, customers: true }));
         setError(null);
         try {
-            const response = await fetch(`${API_BASE_URL}/customers?business_id=${selectedBusinessUnit.id}`);
+            const params = new URLSearchParams({
+                business_id: String(selectedBusinessUnit.id),
+                page: String(currentPage),
+                per_page: String(perPage),
+            });
+            if (debouncedKeyword) {
+                params.append('keyword', debouncedKeyword);
+            }
+            
+            const url = `${API_BASE_URL}/customers?${params.toString()}`;
+            const response = await fetch(url);
             if (!response.ok) throw new Error('Gagal memuat data customer');
             const result = await response.json();
             
-            if (result.code === 200 && result.data && Array.isArray(result.data.data)) {
-                setCustomers(result.data.data);
+            if (result.code === 200 && result.data && typeof result.data === 'object') {
+                setCustomers(result.data.data || []);
+                const { data, ...paginationInfo } = result.data;
+                setPagination(paginationInfo);
             } else {
                  setCustomers([]);
+                 setPagination(null);
                  if (result.code !== 200) {
                     throw new Error(result.message || 'Format data customer tidak valid');
                  }
@@ -101,10 +146,11 @@ const CustomerManagement: React.FC<CustomerManagementProps> = ({ selectedBusines
             setError(err.message);
             addNotification(`Gagal memuat customer: ${err.message}`, 'error');
             setCustomers([]);
+            setPagination(null);
         } finally {
             setIsLoading(prev => ({ ...prev, customers: false }));
         }
-    }, [selectedBusinessUnit, addNotification]);
+    }, [selectedBusinessUnit, addNotification, currentPage, perPage, debouncedKeyword]);
 
     useEffect(() => {
         fetchCustomers();
@@ -185,16 +231,33 @@ const CustomerManagement: React.FC<CustomerManagementProps> = ({ selectedBusines
         }
     };
     
+    const handlePerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setPerPage(Number(e.target.value));
+        setCurrentPage(1);
+    };
+
+    const fromItem = pagination ? (pagination.current_page - 1) * pagination.per_page + 1 : 0;
+    
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h2 className="text-3xl font-bold text-slate-800">Manajemen Customer</h2>
             </div>
 
-             <div className="flex justify-end">
+             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="relative w-full md:w-auto md:flex-grow md:max-w-sm">
+                   <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
+                   <input
+                        type="text"
+                        placeholder="Cari customer..."
+                        value={searchKeyword}
+                        onChange={(e) => setSearchKeyword(e.target.value)}
+                        className="h-10 w-full pl-10 pr-4 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                </div>
                 <button 
                     onClick={() => handleOpenModal()}
-                    className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition"
+                    className="flex-shrink-0 flex items-center justify-center w-full md:w-auto h-10 px-4 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition"
                 >
                     <PlusIcon className="w-5 h-5 mr-2"/>
                     Tambah Customer
@@ -240,13 +303,48 @@ const CustomerManagement: React.FC<CustomerManagementProps> = ({ selectedBusines
                             ) : (
                                 <tr>
                                     <td colSpan={6} className="text-center py-10 text-slate-500">
-                                        {selectedBusinessUnit ? 'Tidak ada customer untuk unit usaha ini.' : 'Silakan pilih unit usaha.'}
+                                        {debouncedKeyword ? 'Tidak ada customer yang cocok dengan pencarian.' : 'Tidak ada customer untuk unit usaha ini.'}
                                     </td>
                                 </tr>
                             )}
                         </tbody>
                     </table>
                 </div>
+                 {pagination && pagination.total > 0 && (
+                    <div className="px-6 py-3 flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-200 bg-slate-50">
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-slate-600">Item per halaman:</span>
+                            <select
+                                value={perPage}
+                                onChange={handlePerPageChange}
+                                className="bg-white border border-slate-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-red-500"
+                            >
+                                <option value={15}>15</option>
+                                <option value={25}>25</option>
+                                <option value={50}>50</option>
+                            </select>
+                        </div>
+                        <div className="text-sm text-slate-600">
+                            Menampilkan {fromItem} - {pagination.to} dari {pagination.total} customer
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setCurrentPage(prev => prev - 1)}
+                                disabled={!pagination.prev_page_url}
+                                className="px-3 py-1 text-sm font-medium bg-white border border-slate-300 rounded-md hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Sebelumnya
+                            </button>
+                            <button
+                                onClick={() => setCurrentPage(prev => prev + 1)}
+                                disabled={!pagination.next_page_url}
+                                className="px-3 py-1 text-sm font-medium bg-white border border-slate-300 rounded-md hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Berikutnya
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
             
             <CustomerModal

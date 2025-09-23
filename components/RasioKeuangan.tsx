@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { BusinessUnit, FinancialRatioData, FinancialRatioDetail } from '../types';
 import { useNotification } from '../contexts/NotificationContext';
@@ -25,7 +26,9 @@ const RatioCard: React.FC<{ ratio: FinancialRatioDetail }> = ({ ratio }) => {
                     <p className="font-semibold mt-2">Komponen:</p>
                     <ul className="list-disc list-inside text-slate-600">
                         {Object.entries(ratio.components).map(([key, value]) => (
-                            <li key={key}>{key.replace(/_/g, ' ')}: {`Rp ${value.toLocaleString('id-ID')}`}</li>
+                            // FIX: Replaced `toLocaleString` with `Intl.NumberFormat` to avoid type errors with older TypeScript lib versions.
+                            // FIX: Cast value to Number to resolve TypeScript error where it was inferred as `unknown`.
+                            <li key={key}>{key.replace(/_/g, ' ')}: {`Rp ${new Intl.NumberFormat('id-ID').format(Number(value))}`}</li>
                         ))}
                     </ul>
                 </div>
