@@ -4,7 +4,7 @@ import { EditIcon, TrashIcon, PlusIcon } from './icons/Icons';
 import { useNotification } from '../contexts/NotificationContext';
 import ConfirmationModal from './ConfirmationModal';
 
-const API_ENDPOINT = 'https://api.majukoperasiku.my.id/manage/payment-methods';
+const API_ENDPOINT = 'https://api.majukoperasiku.my.id/manage/payment_methods';
 
 // --- Type Definitions ---
 interface ApiPaymentMethod {
