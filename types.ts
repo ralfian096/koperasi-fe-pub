@@ -282,6 +282,8 @@ export interface PengajuanItem {
   quantity: number;
   unit_price: number;
   total_price: number;
+  unit?: string;
+  price_reference?: string;
 }
 
 export interface Pengajuan {
