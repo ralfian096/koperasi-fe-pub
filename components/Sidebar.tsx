@@ -1,6 +1,4 @@
 
-
-
 import React, { useState } from 'react';
 import type { MainView, SubView } from '../App';
 import { BusinessUnit } from '../types';
@@ -122,16 +120,33 @@ const UsahaSidebar: React.FC<{
     );
 }
 
+const UsahaGeneralSidebar: React.FC<{
+    currentView: SubView | null;
+    setCurrentView: (view: SubView) => void;
+}> = ({ currentView, setCurrentView }) => {
+    return (
+        <ul>
+            <NavLink view="business-unit-management" label="Manajemen Usaha" icon={BuildingStorefrontIcon} currentView={currentView} setCurrentView={setCurrentView} />
+            <NavLink view="payment-methods" label="Metode Pembayaran" icon={BanknotesIcon} currentView={currentView} setCurrentView={setCurrentView} />
+            <NavLink view="units" label="Unit Satuan" icon={ScaleIcon} currentView={currentView} setCurrentView={setCurrentView} />
+        </ul>
+    );
+};
+
+
 const Sidebar: React.FC<SidebarProps> = ({ mainView, subView, setSubView, selectedBusinessUnit, onSwitchBusinessUnit }) => {
     
-    if (mainView === 'dashboard' || (mainView === 'usaha' && !selectedBusinessUnit)) {
-        return <aside className="w-0 md:w-16 bg-white border-r border-slate-200 transition-all duration-300"></aside>; // Collapsed sidebar
+    if (mainView === 'dashboard') {
+        return <aside className="w-0 md:w-16 bg-white border-r border-slate-200 transition-all duration-300"></aside>; // Collapsed sidebar for main dashboard
     }
 
     const renderSidebarContent = () => {
         switch(mainView) {
             case 'usaha':
-                return <UsahaSidebar currentView={subView} setCurrentView={setSubView} />;
+                if (selectedBusinessUnit) {
+                    return <UsahaSidebar currentView={subView} setCurrentView={setSubView} />;
+                }
+                return <UsahaGeneralSidebar currentView={subView} setCurrentView={setSubView} />;
             case 'koperasi':
                  return (
                     <ul>
@@ -169,6 +184,11 @@ const Sidebar: React.FC<SidebarProps> = ({ mainView, subView, setSubView, select
              {mainView !== 'usaha' && (
                 <div className="h-16 flex items-center border-b border-slate-200 px-4">
                      <p className="text-lg font-bold text-slate-800 capitalize">{mainView}</p>
+                </div>
+             )}
+             {mainView === 'usaha' && !selectedBusinessUnit && (
+                 <div className="h-16 flex items-center border-b border-slate-200 px-4">
+                     <p className="text-lg font-bold text-slate-800 capitalize">Portal Usaha</p>
                 </div>
              )}
             

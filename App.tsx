@@ -30,6 +30,8 @@ import Jurnal from './components/Jurnal';
 import LaporanNeraca from './components/LaporanNeraca';
 import RasioKeuangan from './components/RasioKeuangan';
 import ChartOfAccountsManagement from './components/ChartOfAccountsManagement';
+import PaymentMethodManagement from './components/PaymentMethodManagement';
+import UnitManagement from './components/UnitManagement';
 
 
 export type MainView = 'dashboard' | 'usaha' | 'pengajuan' | 'koperasi' | 'keuangan' | 'pengaturan';
@@ -53,7 +55,11 @@ export type SubView =
   | 'jurnal'
   | 'balance-sheet-report'
   | 'financial-ratio-report'
-  | 'chart-of-accounts';
+  | 'chart-of-accounts'
+  // New views for general Usaha group
+  | 'business-unit-management'
+  | 'payment-methods'
+  | 'units';
 
 
 const App: React.FC = () => {
@@ -101,6 +107,16 @@ const App: React.FC = () => {
       localStorage.removeItem('subView');
     }
   }, [subView]);
+  
+  // Effect to manage default sub-view state when navigating
+  useEffect(() => {
+    if (mainView === 'usaha' && !selectedBusinessUnit) {
+      const validGeneralUsahaViews: SubView[] = ['business-unit-management', 'payment-methods', 'units'];
+      if (!subView || !validGeneralUsahaViews.includes(subView)) {
+        setSubView('business-unit-management');
+      }
+    }
+  }, [mainView, selectedBusinessUnit, subView]);
 
   useEffect(() => {
     if (selectedBusinessUnit) {
@@ -189,7 +205,17 @@ const App: React.FC = () => {
         if (selectedBusinessUnit) {
           return renderUsahaSubView();
         }
-        return <BusinessUnitSelector onSelectUnit={handleSelectBusinessUnit} />;
+        // General Usaha View (no unit selected)
+        switch(subView) {
+          case 'business-unit-management':
+            return <BusinessUnitSelector onSelectUnit={handleSelectBusinessUnit} />;
+          case 'payment-methods':
+            return <PaymentMethodManagement />;
+          case 'units':
+            return <UnitManagement />;
+          default:
+            return <BusinessUnitSelector onSelectUnit={handleSelectBusinessUnit} />;
+        }
       case 'pengajuan':
         return <Pengajuan />;
       case 'koperasi':
@@ -222,7 +248,10 @@ const App: React.FC = () => {
             subView={subView}
             setSubView={setSubView}
             selectedBusinessUnit={selectedBusinessUnit}
-            onSwitchBusinessUnit={() => setSelectedBusinessUnit(null)}
+            onSwitchBusinessUnit={() => {
+              setSelectedBusinessUnit(null);
+              setSubView('business-unit-management');
+            }}
           />
           <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-20 md:pb-6">
             {renderView()}

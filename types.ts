@@ -296,4 +296,5 @@ export interface Pengajuan {
   total_amount: number;
   items: PengajuanItem[];
   rejection_reason?: string | null;
+  file_proposal?: string | null;
 }

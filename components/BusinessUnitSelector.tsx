@@ -12,10 +12,50 @@ import {
     Bars3Icon,
     MagnifyingGlassIcon,
     EditIcon,
-    TrashIcon
+    TrashIcon,
+    ImagePlaceholderIcon
 } from './icons/Icons';
 
 const API_ENDPOINT = 'https://api.majukoperasiku.my.id/manage/business';
+const API_STORAGE_URL = 'https://api.majukoperasiku.my.id/storage';
+
+const getFullLogoUrl = (path: string | null): string | null => {
+  if (!path) return null;
+  if (path.startsWith('http') || path.startsWith('blob:')) {
+    return path;
+  }
+  return `${API_STORAGE_URL}/${path}`;
+};
+
+const ImageWithFallback: React.FC<{
+  src: string | null;
+  alt: string;
+  className: string;
+  fallbackClassName?: string;
+}> = ({ src, alt, className, fallbackClassName }) => {
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (src) {
+      setError(false);
+    }
+  }, [src]);
+
+  const handleError = () => {
+    setError(true);
+  };
+
+  if (error || !src) {
+    return (
+      <div className="flex items-center justify-center w-full h-full bg-slate-100">
+        <ImagePlaceholderIcon className={fallbackClassName || 'w-full h-full text-slate-400 p-2'} />
+      </div>
+    );
+  }
+
+  return <img src={src} alt={alt} onError={handleError} className={className} />;
+};
+
 
 const BusinessUnitCard: React.FC<{
     unit: BusinessUnit;
@@ -28,8 +68,13 @@ const BusinessUnitCard: React.FC<{
             {/* Card Header */}
             <div className="flex items-start justify-between">
                 <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 flex items-center justify-center bg-slate-100 rounded-lg">
-                        <BuildingOffice2Icon className="w-6 h-6 text-slate-500" />
+                    <div className="w-12 h-12 flex-shrink-0 bg-slate-100 rounded-lg overflow-hidden">
+                        <ImageWithFallback
+                            src={getFullLogoUrl(unit.logo)}
+                            alt={`${unit.name} logo`}
+                            className="w-full h-full object-cover"
+                            fallbackClassName="w-6 h-6 text-slate-400"
+                        />
                     </div>
                     <div>
                         <h3 className="font-bold text-slate-800 text-lg">{unit.name}</h3>
@@ -90,8 +135,13 @@ const BusinessUnitListItem: React.FC<{
         <tr className="bg-white hover:bg-slate-50 transition-colors">
             <td className="px-6 py-4 whitespace-nowrap">
                 <div className="flex items-center gap-4">
-                     <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-slate-100 rounded-md">
-                        <BuildingOffice2Icon className="w-5 h-5 text-slate-500" />
+                     <div className="w-10 h-10 flex-shrink-0 bg-slate-100 rounded-md overflow-hidden">
+                        <ImageWithFallback
+                            src={getFullLogoUrl(unit.logo)}
+                            alt={`${unit.name} logo`}
+                            className="w-full h-full object-cover"
+                            fallbackClassName="w-5 h-5 text-slate-400"
+                        />
                     </div>
                     <div>
                         <div className="text-sm font-semibold text-slate-900">{unit.name}</div>

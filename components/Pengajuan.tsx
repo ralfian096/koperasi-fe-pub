@@ -55,6 +55,7 @@ const Pengajuan: React.FC = () => {
                     id: p.id,
                     submitted_at: new Date(p.submitted_at),
                     rejection_reason: p.rejection_reason || null,
+                    file_proposal: p.file_proposal || null,
                 }));
                 setPengajuanList(mappedData);
             } else {
@@ -210,7 +211,22 @@ const Pengajuan: React.FC = () => {
                                     return (
                                         <tr key={p.id}>
                                             <td className="px-6 py-4 whitespace-nowrap">
-                                                <div className="text-sm font-semibold text-slate-900">{p.title}</div>
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-sm font-semibold text-slate-900">{p.title}</span>
+                                                    {p.file_proposal && (
+                                                        <a 
+                                                            href={`https://api.majukoperasiku.my.id/storage/${p.file_proposal}`} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer" 
+                                                            title="Lihat Proposal Terlampir"
+                                                            className="text-indigo-500 hover:text-indigo-700 flex-shrink-0"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                              <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                                            </svg>
+                                                        </a>
+                                                    )}
+                                                </div>
                                                 <div className="text-xs text-slate-500">{p.submission_code}</div>
                                                 {p.status === 'REJECTED' && p.rejection_reason && (
                                                     <div className="text-xs text-red-600 mt-1 italic max-w-xs truncate" title={p.rejection_reason}>

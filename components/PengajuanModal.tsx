@@ -169,8 +169,34 @@ const PengajuanModal: React.FC<PengajuanModalProps> = ({ isOpen, onClose, onSave
                                 </div>
                             )}
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-slate-600">File Proposal (PDF, Word, Excel)</label>
-                                <input type="file" onChange={handleFileChange} accept=".pdf,.doc,.docx,.xls,.xlsx" disabled={isReadOnly || isSubmitting} className="input mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+                                <label htmlFor="proposal-file-input" className="block text-sm font-medium text-slate-600">File Proposal (PDF, Word, Excel)</label>
+                                {isEditing && pengajuanToEdit.file_proposal && (
+                                    <div className="mt-1">
+                                        <a
+                                            href={`https://api.majukoperasiku.my.id/storage/${pengajuanToEdit.file_proposal}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
+                                        >
+                                            Lihat file terlampir
+                                        </a>
+                                    </div>
+                                )}
+                                {!isReadOnly && (
+                                    <input id="proposal-file-input" type="file" onChange={handleFileChange} accept=".pdf,.doc,.docx,.xls,.xlsx" disabled={isSubmitting} className="input mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+                                )}
+                                {proposalFile && !isReadOnly && (
+                                    <div className="mt-1 text-sm text-slate-600">
+                                        <span>File baru: {proposalFile.name}</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => setProposalFile(null)}
+                                            className="ml-2 text-red-500 hover:text-red-700 font-bold"
+                                            title="Batal pilih file"
+                                        >&times;</button>
+                                    </div>
+                                )}
+                                {!isReadOnly && <p className="text-xs text-slate-500 mt-1">{isEditing && pengajuanToEdit.file_proposal ? 'Mengunggah file baru akan menggantikan file yang ada.' : 'Opsional. Unggah file proposal jika ada.'}</p>}
                             </div>
                         </div>
                     </div>
