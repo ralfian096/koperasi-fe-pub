@@ -207,6 +207,10 @@ export interface JournalEntry {
   }[];
   total_debit: string;
   total_credit: string;
+  business?: {
+      id: number;
+      name: string;
+  };
 }
 
 // New types for Laporan Laba Rugi (PHU) / Income Statement
@@ -281,7 +285,7 @@ export interface PengajuanItem {
   description: string;
   quantity: number;
   unit_price: number;
-  total_price: number;
+  subtotal: number;
   unit?: string;
   price_reference?: string;
 }

@@ -51,7 +51,7 @@ export type SubView =
   | 'profit-loss-report'
   | 'cooperative-management' // For Koperasi section
   | 'user-management' // For Pengaturan section
-  // New views for Keuangan group
+  // New views for Keuangan group (per business unit)
   | 'jurnal'
   | 'balance-sheet-report'
   | 'financial-ratio-report'
@@ -59,7 +59,12 @@ export type SubView =
   // New views for general Usaha group
   | 'business-unit-management'
   | 'payment-methods'
-  | 'units';
+  | 'units'
+  // New views for main Keuangan section (consolidated)
+  | 'jurnal-umum'
+  | 'laporan-phu'
+  | 'laporan-neraca'
+  | 'rasio-keuangan';
 
 
 const App: React.FC = () => {
@@ -115,6 +120,12 @@ const App: React.FC = () => {
       if (!subView || !validGeneralUsahaViews.includes(subView)) {
         setSubView('business-unit-management');
       }
+    }
+    if (mainView === 'keuangan') {
+        const validKeuanganViews: SubView[] = ['jurnal-umum', 'laporan-phu', 'laporan-neraca', 'rasio-keuangan'];
+        if (!subView || !validKeuanganViews.includes(subView)) {
+            setSubView('jurnal-umum');
+        }
     }
   }, [mainView, selectedBusinessUnit, subView]);
 
@@ -221,7 +232,7 @@ const App: React.FC = () => {
       case 'koperasi':
         return <CooperativeManagement />;
       case 'keuangan':
-        return <Keuangan />;
+        return <Keuangan subView={subView} />;
       case 'pengaturan':
         return <UserManagement />;
       default:

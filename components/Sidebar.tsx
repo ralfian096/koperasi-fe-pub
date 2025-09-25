@@ -133,6 +133,20 @@ const UsahaGeneralSidebar: React.FC<{
     );
 };
 
+const KeuanganSidebar: React.FC<{
+    currentView: SubView | null;
+    setCurrentView: (view: SubView) => void;
+}> = ({ currentView, setCurrentView }) => {
+    return (
+        <ul>
+            <NavLink view="jurnal-umum" label="Jurnal Umum" icon={ReportIcon} currentView={currentView} setCurrentView={setCurrentView} />
+            <NavLink view="laporan-phu" label="Laporan PHU" icon={ReportIcon} currentView={currentView} setCurrentView={setCurrentView} />
+            <NavLink view="laporan-neraca" label="Laporan Neraca" icon={ReportIcon} currentView={currentView} setCurrentView={setCurrentView} />
+            <NavLink view="rasio-keuangan" label="Rasio Keuangan" icon={ScaleIcon} currentView={currentView} setCurrentView={setCurrentView} />
+        </ul>
+    );
+};
+
 
 const Sidebar: React.FC<SidebarProps> = ({ mainView, subView, setSubView, selectedBusinessUnit, onSwitchBusinessUnit }) => {
     
@@ -147,6 +161,8 @@ const Sidebar: React.FC<SidebarProps> = ({ mainView, subView, setSubView, select
                     return <UsahaSidebar currentView={subView} setCurrentView={setSubView} />;
                 }
                 return <UsahaGeneralSidebar currentView={subView} setCurrentView={setSubView} />;
+            case 'keuangan':
+                return <KeuanganSidebar currentView={subView} setCurrentView={setSubView} />;
             case 'koperasi':
                  return (
                     <ul>

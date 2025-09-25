@@ -1,5 +1,4 @@
 
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Pengajuan as PengajuanType } from '../types';
 import { PlusIcon, EditIcon, TrashIcon, EyeIcon } from './icons/Icons';
@@ -33,6 +32,7 @@ const Pengajuan: React.FC = () => {
     
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingPengajuan, setEditingPengajuan] = useState<PengajuanType | null>(null);
+    const [modalMode, setModalMode] = useState<'add' | 'edit' | 'view'>('add');
     const [isConfirmOpen, setIsConfirmOpen] = useState(false);
     const [pengajuanToDelete, setPengajuanToDelete] = useState<PengajuanType | null>(null);
     const [isRejectionModalOpen, setIsRejectionModalOpen] = useState(false);
@@ -83,8 +83,9 @@ const Pengajuan: React.FC = () => {
             .sort((a, b) => b.submitted_at.getTime() - a.submitted_at.getTime());
     }, [pengajuanList, statusFilter]);
 
-    const handleOpenModal = (p: PengajuanType | null = null) => {
+    const handleOpenModal = (p: PengajuanType | null = null, mode: 'add' | 'edit' | 'view') => {
         setEditingPengajuan(p);
+        setModalMode(mode);
         setIsModalOpen(true);
     };
 
@@ -180,7 +181,7 @@ const Pengajuan: React.FC = () => {
                         <option value="APPROVED">Diterima</option>
                         <option value="REJECTED">Ditolak</option>
                     </select>
-                    <button onClick={() => handleOpenModal()} className="flex items-center h-10 px-4 bg-indigo-600 text-white rounded-lg font-semibold text-sm shadow-md hover:bg-indigo-700 transition">
+                    <button onClick={() => handleOpenModal(null, 'add')} className="flex items-center h-10 px-4 bg-indigo-600 text-white rounded-lg font-semibold text-sm shadow-md hover:bg-indigo-700 transition">
                         <PlusIcon className="w-5 h-5 mr-2"/>
                         Buat Pengajuan
                     </button>
@@ -250,13 +251,15 @@ const Pengajuan: React.FC = () => {
                                                         <button onClick={() => handleOpenRejectionModal(p)} disabled={isSubmitting} className="px-3 py-1 text-xs font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200 disabled:opacity-50">Tolak</button>
                                                     </>
                                                 )}
-                                                <button
-                                                    onClick={() => handleOpenModal(p)}
-                                                    title={canEdit ? 'Ubah Pengajuan' : 'Lihat Detail'}
-                                                    className="text-indigo-600 hover:text-indigo-900 p-1 inline-block"
-                                                >
-                                                    {canEdit ? <EditIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
-                                                </button>
+                                                {canEdit ? (
+                                                    <button onClick={() => handleOpenModal(p, 'edit')} title="Ubah Pengajuan" className="text-indigo-600 hover:text-indigo-900 p-1 inline-block">
+                                                        <EditIcon className="w-5 h-5" />
+                                                    </button>
+                                                ) : (
+                                                    <button onClick={() => handleOpenModal(p, 'view')} title="Lihat Detail" className="text-indigo-600 hover:text-indigo-900 p-1 inline-block">
+                                                        <EyeIcon className="w-5 h-5" />
+                                                    </button>
+                                                )}
                                                 {canEdit && (
                                                     <button onClick={() => handleDelete(p)} title="Hapus Pengajuan" className="text-red-600 hover:text-red-900 p-1 inline-block">
                                                         <TrashIcon className="w-5 h-5" />
@@ -284,6 +287,7 @@ const Pengajuan: React.FC = () => {
                     onClose={handleCloseModal}
                     onSave={fetchPengajuan}
                     pengajuanToEdit={editingPengajuan}
+                    mode={modalMode}
                 />
             )}
             

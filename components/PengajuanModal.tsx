@@ -10,11 +10,26 @@ interface PengajuanModalProps {
     onClose: () => void;
     onSave: () => void;
     pengajuanToEdit: Pengajuan | null;
+    mode: 'add' | 'edit' | 'view';
 }
 
-const PengajuanModal: React.FC<PengajuanModalProps> = ({ isOpen, onClose, onSave, pengajuanToEdit }) => {
+const formatCurrency = (amount: number | undefined) => {
+    if (amount === undefined || amount === null) return 'Rp 0';
+    return `Rp ${Number(amount).toLocaleString('id-ID', { maximumFractionDigits: 0 })}`;
+};
+
+const DetailViewText: React.FC<{ label: string; value: string | React.ReactNode; fullWidth?: boolean }> = ({ label, value, fullWidth = false }) => (
+    <div className={fullWidth ? 'md:col-span-2' : ''}>
+        <label className="block text-sm font-medium text-slate-500">{label}</label>
+        <div className="mt-1 text-base text-slate-800 break-words">{value}</div>
+    </div>
+);
+
+const PengajuanModal: React.FC<PengajuanModalProps> = ({ isOpen, onClose, onSave, pengajuanToEdit, mode }) => {
     const { addNotification } = useNotification();
-    const isEditing = !!pengajuanToEdit;
+    const isReadOnly = mode === 'view';
+    const isEditing = mode === 'edit';
+    const isAdding = mode === 'add';
 
     const statusDisplayMap: Record<string, string> = {
         DRAFT: 'Draft',
@@ -30,10 +45,12 @@ const PengajuanModal: React.FC<PengajuanModalProps> = ({ isOpen, onClose, onSave
         REJECTED: 'bg-red-100 text-red-700',
     };
 
-    const initialItem = { description: '', unit: '', quantity: 1, unit_price: 0, price_reference: '' };
+    type FormItem = Omit<PengajuanItem, 'id' | 'subtotal'> & { key: number; subtotal: number };
+
+    const initialItem: FormItem = { description: '', unit: '', quantity: 1, unit_price: 0, price_reference: '', key: Date.now(), subtotal: 0 };
     
     const [title, setTitle] = useState('');
-    const [items, setItems] = useState<(Omit<PengajuanItem, 'id'> & { key: number })[]>([]);
+    const [items, setItems] = useState<FormItem[]>([initialItem]);
     const [proposalFile, setProposalFile] = useState<File | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     
@@ -41,29 +58,29 @@ const PengajuanModal: React.FC<PengajuanModalProps> = ({ isOpen, onClose, onSave
         if (isOpen) {
             setIsSubmitting(false);
             setProposalFile(null);
-            if (isEditing && pengajuanToEdit) {
+            if ((isEditing || isReadOnly) && pengajuanToEdit) {
                 setTitle(pengajuanToEdit.title);
                 setItems(pengajuanToEdit.items.map((item, index) => ({ 
                     description: item.description,
                     quantity: item.quantity,
                     unit_price: item.unit_price,
-                    total_price: item.total_price,
+                    subtotal: item.subtotal,
                     unit: item.unit || '',
                     price_reference: item.price_reference || '',
-                    key: Date.now() + index 
+                    key: item.id || (Date.now() + index)
                 })));
-            } else {
+            } else { // 'add' mode
                 setTitle('');
-                setItems([{ ...initialItem, total_price: 0, key: Date.now() }]);
+                setItems([{ ...initialItem, subtotal: 0, key: Date.now() }]);
             }
         }
-    }, [isOpen, isEditing, pengajuanToEdit]);
+    }, [isOpen, isEditing, isReadOnly, pengajuanToEdit]);
     
-    const handleItemChange = (key: number, field: keyof typeof initialItem, value: string | number) => {
+    const handleItemChange = (key: number, field: keyof Omit<FormItem, 'key' | 'subtotal'>, value: string | number) => {
         setItems(prevItems => prevItems.map(item => {
             if (item.key === key) {
                 const updatedItem = { ...item, [field]: value };
-                updatedItem.total_price = Number(updatedItem.quantity) * Number(updatedItem.unit_price);
+                updatedItem.subtotal = Number(updatedItem.quantity) * Number(updatedItem.unit_price);
                 return updatedItem;
             }
             return item;
@@ -79,7 +96,7 @@ const PengajuanModal: React.FC<PengajuanModalProps> = ({ isOpen, onClose, onSave
     };
 
     const addItem = () => {
-        setItems(prev => [...prev, { ...initialItem, total_price: 0, key: Date.now() }]);
+        setItems(prev => [...prev, { ...initialItem, key: Date.now() }]);
     };
 
     const removeItem = (key: number) => {
@@ -88,7 +105,7 @@ const PengajuanModal: React.FC<PengajuanModalProps> = ({ isOpen, onClose, onSave
         }
     };
     
-    const totalAmount = useMemo(() => items.reduce((sum, item) => sum + (item.total_price || 0), 0), [items]);
+    const totalAmount = useMemo(() => items.reduce((sum, item) => sum + (item.subtotal || 0), 0), [items]);
 
     const handleSubmit = async (status: 'DRAFT' | 'SUBMITTED') => {
         if (!title || items.some(i => !i.description || !i.unit || i.quantity <= 0 || i.unit_price < 0)) {
@@ -115,7 +132,7 @@ const PengajuanModal: React.FC<PengajuanModalProps> = ({ isOpen, onClose, onSave
             formData.append(`items[${index}][price_reference]`, item.price_reference || '');
         });
         
-        const url = isEditing ? `${API_ENDPOINT}/${pengajuanToEdit.id}` : API_ENDPOINT;
+        const url = isEditing ? `${API_ENDPOINT}/${pengajuanToEdit!.id}` : API_ENDPOINT;
         if (isEditing) {
             formData.append('_method', 'PUT');
         }
@@ -144,8 +161,9 @@ const PengajuanModal: React.FC<PengajuanModalProps> = ({ isOpen, onClose, onSave
 
     if (!isOpen) return null;
     
-    const modalTitle = isEditing ? `Ubah Pengajuan: ${pengajuanToEdit.submission_code}` : 'Buat Pengajuan RAB Baru';
-    const isReadOnly = isEditing && pengajuanToEdit.status !== 'DRAFT' && pengajuanToEdit.status !== null;
+    const modalTitle = isReadOnly 
+        ? `Detail Pengajuan: ${pengajuanToEdit?.submission_code}`
+        : (isEditing ? `Ubah Pengajuan: ${pengajuanToEdit?.submission_code}` : 'Buat Pengajuan RAB Baru');
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start z-50 p-4">
@@ -156,47 +174,47 @@ const PengajuanModal: React.FC<PengajuanModalProps> = ({ isOpen, onClose, onSave
                     <div className="p-4 border rounded-lg">
                         <h3 className="font-semibold text-lg text-slate-700 mb-4">Informasi Dasar</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-600">Judul Pengajuan *</label>
-                                <input type="text" value={title} onChange={e => setTitle(e.target.value)} disabled={isReadOnly || isSubmitting} required className="input"/>
-                            </div>
-                             {isEditing && (
+                            {isReadOnly ? (
+                                <DetailViewText label="Judul Pengajuan" value={title} />
+                            ) : (
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-600">Status</label>
-                                    <p className={`mt-2 font-semibold text-sm px-2 py-1 rounded-full inline-block ${statusStyles[pengajuanToEdit.status || 'DRAFT']}`}>
-                                      {statusDisplayMap[pengajuanToEdit.status || 'DRAFT']}
-                                    </p>
+                                    <label className="block text-sm font-medium text-slate-600">Judul Pengajuan *</label>
+                                    <input type="text" value={title} onChange={e => setTitle(e.target.value)} disabled={isSubmitting} required className="input"/>
                                 </div>
                             )}
+                             {(isEditing || isReadOnly) && pengajuanToEdit && (
+                                <DetailViewText label="Status" value={
+                                    <span className={`font-semibold text-sm px-2 py-1 rounded-full inline-block ${statusStyles[pengajuanToEdit.status || 'DRAFT']}`}>
+                                        {statusDisplayMap[pengajuanToEdit.status || 'DRAFT']}
+                                    </span>
+                                } />
+                            )}
                             <div className="md:col-span-2">
-                                <label htmlFor="proposal-file-input" className="block text-sm font-medium text-slate-600">File Proposal (PDF, Word, Excel)</label>
-                                {isEditing && pengajuanToEdit.file_proposal && (
-                                    <div className="mt-1">
-                                        <a
-                                            href={`https://api.majukoperasiku.my.id/storage/${pengajuanToEdit.file_proposal}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-sm text-indigo-600 hover:text-indigo-800 font-medium"
-                                        >
-                                            Lihat file terlampir
-                                        </a>
-                                    </div>
+                                {isReadOnly ? (
+                                    pengajuanToEdit?.file_proposal ? (
+                                        <DetailViewText label="File Proposal" value={
+                                            <a href={`https://api.majukoperasiku.my.id/storage/${pengajuanToEdit.file_proposal}`} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 font-medium">
+                                                Lihat file terlampir
+                                            </a>
+                                        } />
+                                    ) : (
+                                        <DetailViewText label="File Proposal" value="Tidak ada file terlampir." />
+                                    )
+                                ) : (
+                                    <>
+                                        <label htmlFor="proposal-file-input" className="block text-sm font-medium text-slate-600">File Proposal (PDF, Word, Excel)</label>
+                                        {isEditing && pengajuanToEdit?.file_proposal && (
+                                            <div className="mt-1">
+                                                <a href={`https://api.majukoperasiku.my.id/storage/${pengajuanToEdit.file_proposal}`} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                                                    Lihat file terlampir saat ini
+                                                </a>
+                                            </div>
+                                        )}
+                                        <input id="proposal-file-input" type="file" onChange={handleFileChange} accept=".pdf,.doc,.docx,.xls,.xlsx" disabled={isSubmitting} className="input mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+                                        {proposalFile && <div className="mt-1 text-sm text-slate-600">File baru: {proposalFile.name}</div>}
+                                        <p className="text-xs text-slate-500 mt-1">{isEditing && pengajuanToEdit?.file_proposal ? 'Mengunggah file baru akan menggantikan file yang ada.' : 'Opsional. Unggah file proposal jika ada.'}</p>
+                                    </>
                                 )}
-                                {!isReadOnly && (
-                                    <input id="proposal-file-input" type="file" onChange={handleFileChange} accept=".pdf,.doc,.docx,.xls,.xlsx" disabled={isSubmitting} className="input mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
-                                )}
-                                {proposalFile && !isReadOnly && (
-                                    <div className="mt-1 text-sm text-slate-600">
-                                        <span>File baru: {proposalFile.name}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => setProposalFile(null)}
-                                            className="ml-2 text-red-500 hover:text-red-700 font-bold"
-                                            title="Batal pilih file"
-                                        >&times;</button>
-                                    </div>
-                                )}
-                                {!isReadOnly && <p className="text-xs text-slate-500 mt-1">{isEditing && pengajuanToEdit.file_proposal ? 'Mengunggah file baru akan menggantikan file yang ada.' : 'Opsional. Unggah file proposal jika ada.'}</p>}
                             </div>
                         </div>
                     </div>
@@ -204,42 +222,54 @@ const PengajuanModal: React.FC<PengajuanModalProps> = ({ isOpen, onClose, onSave
                     <div className="p-4 border rounded-lg">
                         <h3 className="font-semibold text-lg text-slate-700 mb-4">Rincian Anggaran</h3>
                         <div className="space-y-4">
-                           {items.map((item, index) => (
-                               <div key={item.key} className="p-4 border rounded-md bg-slate-50/50 relative space-y-4">
+                           {items.map((item) => (
+                               <div key={item.key} className="p-4 border rounded-md bg-slate-50/50 relative">
                                    {!isReadOnly && items.length > 1 && (
                                        <button type="button" onClick={() => removeItem(item.key)} disabled={isSubmitting} className="absolute top-3 right-3 text-red-500 hover:text-red-700 disabled:opacity-50 p-1 rounded-full hover:bg-red-100">
                                            <TrashIcon className="w-5 h-5"/>
                                        </button>
                                    )}
-
-                                   <div>
-                                       <label htmlFor={`description-${item.key}`} className="block text-sm font-medium text-slate-600">Deskripsi Item *</label>
-                                       <input id={`description-${item.key}`} type="text" value={item.description} onChange={e => handleItemChange(item.key, 'description', e.target.value)} disabled={isReadOnly || isSubmitting} className="input" required/>
-                                   </div>
-
-                                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                                       <div>
-                                           <label htmlFor={`unit-${item.key}`} className="block text-sm font-medium text-slate-600">Satuan *</label>
-                                           <input id={`unit-${item.key}`} type="text" placeholder="box, lusin, dll" value={item.unit} onChange={e => handleItemChange(item.key, 'unit', e.target.value)} disabled={isReadOnly || isSubmitting} className="input" required/>
-                                       </div>
-                                       <div>
-                                           <label htmlFor={`quantity-${item.key}`} className="block text-sm font-medium text-slate-600">Qty *</label>
-                                           <input id={`quantity-${item.key}`} type="number" value={item.quantity} onChange={e => handleItemChange(item.key, 'quantity', e.target.value)} disabled={isReadOnly || isSubmitting} className="input" min="1" required/>
-                                       </div>
-                                       <div>
-                                           <label htmlFor={`unit_price-${item.key}`} className="block text-sm font-medium text-slate-600">Harga Satuan *</label>
-                                           <input id={`unit_price-${item.key}`} type="number" value={item.unit_price} onChange={e => handleItemChange(item.key, 'unit_price', e.target.value)} disabled={isReadOnly || isSubmitting} className="input" min="0" required/>
-                                       </div>
-                                       <div>
-                                           <label htmlFor={`total-${item.key}`} className="block text-sm font-medium text-slate-600">Total</label>
-                                           <input id={`total-${item.key}`} type="text" value={`Rp${(item.total_price || 0).toLocaleString('id-ID')}`} readOnly className="input bg-slate-100 border-none"/>
-                                       </div>
-                                   </div>
-                                   
-                                   <div>
-                                       <label htmlFor={`price_reference-${item.key}`} className="block text-sm font-medium text-slate-600">Referensi Harga</label>
-                                       <input id={`price_reference-${item.key}`} type="text" value={item.price_reference} onChange={e => handleItemChange(item.key, 'price_reference', e.target.value)} disabled={isReadOnly || isSubmitting} className="input"/>
-                                   </div>
+                                   {isReadOnly ? (
+                                        <div className="space-y-3">
+                                            <DetailViewText label="Deskripsi Item" value={item.description} fullWidth />
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                                                <DetailViewText label="Satuan" value={item.unit} />
+                                                <DetailViewText label="Qty" value={item.quantity.toLocaleString('id-ID')} />
+                                                <DetailViewText label="Harga Satuan" value={formatCurrency(item.unit_price)} />
+                                                <DetailViewText label="Subtotal" value={<strong>{formatCurrency(item.subtotal)}</strong>} />
+                                            </div>
+                                            <DetailViewText label="Referensi Harga" value={item.price_reference || '-'} fullWidth />
+                                        </div>
+                                   ) : (
+                                        <div className="space-y-4">
+                                           <div>
+                                               <label className="block text-sm font-medium text-slate-600">Deskripsi Item *</label>
+                                               <input type="text" value={item.description} onChange={e => handleItemChange(item.key, 'description', e.target.value)} disabled={isSubmitting} className="input" required/>
+                                           </div>
+                                           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                                               <div>
+                                                   <label className="block text-sm font-medium text-slate-600">Satuan *</label>
+                                                   <input type="text" placeholder="box, lusin, dll" value={item.unit} onChange={e => handleItemChange(item.key, 'unit', e.target.value)} disabled={isSubmitting} className="input" required/>
+                                               </div>
+                                               <div>
+                                                   <label className="block text-sm font-medium text-slate-600">Qty *</label>
+                                                   <input type="number" value={item.quantity} onChange={e => handleItemChange(item.key, 'quantity', e.target.value)} disabled={isSubmitting} className="input" min="1" required/>
+                                               </div>
+                                               <div>
+                                                   <label className="block text-sm font-medium text-slate-600">Harga Satuan *</label>
+                                                   <input type="number" value={item.unit_price} onChange={e => handleItemChange(item.key, 'unit_price', e.target.value)} disabled={isSubmitting} className="input" min="0" required/>
+                                               </div>
+                                               <div>
+                                                   <label className="block text-sm font-medium text-slate-600">Total</label>
+                                                   <input type="text" value={formatCurrency(item.subtotal)} readOnly className="input bg-slate-100 border-none"/>
+                                               </div>
+                                           </div>
+                                           <div>
+                                               <label className="block text-sm font-medium text-slate-600">Referensi Harga</label>
+                                               <input type="text" value={item.price_reference} onChange={e => handleItemChange(item.key, 'price_reference', e.target.value)} disabled={isSubmitting} className="input"/>
+                                           </div>
+                                        </div>
+                                   )}
                                </div>
                            ))}
                         </div>
@@ -247,14 +277,23 @@ const PengajuanModal: React.FC<PengajuanModalProps> = ({ isOpen, onClose, onSave
                          <div className="mt-4 flex justify-end">
                             <div className="text-right">
                                 <p className="text-sm text-slate-500">Total Keseluruhan</p>
-                                <p className="text-2xl font-bold text-slate-800">Rp{totalAmount.toLocaleString('id-ID')}</p>
+                                <p className="text-2xl font-bold text-slate-800">
+                                    {isReadOnly && pengajuanToEdit 
+                                        ? formatCurrency(pengajuanToEdit.total_amount) 
+                                        : formatCurrency(totalAmount)}
+                                </p>
                             </div>
                         </div>
                     </div>
                      {/* --- Aksi --- */}
                     <div className="flex justify-end space-x-3 mt-8">
                         <button type="button" onClick={onClose} className="btn-secondary" disabled={isSubmitting}>Tutup</button>
-                        {!isReadOnly && (
+                        {mode === 'add' && (
+                            <button type="button" onClick={() => handleSubmit('DRAFT')} className="btn-primary w-40" disabled={isSubmitting}>
+                                {isSubmitting ? 'Menyimpan...' : 'Simpan Draft'}
+                            </button>
+                        )}
+                        {mode === 'edit' && (
                             <>
                                 <button type="button" onClick={() => handleSubmit('DRAFT')} className="btn-secondary" disabled={isSubmitting}>Simpan sebagai Draft</button>
                                 <button type="button" onClick={() => handleSubmit('SUBMITTED')} className="btn-primary w-32" disabled={isSubmitting}>
