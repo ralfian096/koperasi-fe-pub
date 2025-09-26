@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { BusinessUnit, Promotion, PromotionReward, PromotionCondition } from '../types';
 import { useNotification } from '../contexts/NotificationContext';
@@ -21,7 +18,6 @@ const rewardTypeMap: Record<PromotionReward['reward_type'], string> = {
 const statusStyles = {
     active: 'bg-green-100 text-green-700',
     inactive: 'bg-slate-100 text-slate-600',
-    expired: 'bg-red-100 text-red-700',
 };
 
 const PromotionManagement: React.FC<{ selectedBusinessUnit: BusinessUnit }> = ({ selectedBusinessUnit }) => {
@@ -65,11 +61,10 @@ const PromotionManagement: React.FC<{ selectedBusinessUnit: BusinessUnit }> = ({
     
     // Helper functions for formatting display
     const getStatus = (promo: Promotion): { text: string; style: string } => {
-        const now = new Date();
-        const endDate = new Date(promo.end_date);
-        if (promo.is_active === 0) return { text: 'Tidak Aktif', style: statusStyles.inactive };
-        if (now > endDate) return { text: 'Berakhir', style: statusStyles.expired };
-        return { text: 'Aktif', style: statusStyles.active };
+        if (promo.is_active === 1) {
+            return { text: 'Aktif', style: statusStyles.active };
+        }
+        return { text: 'Tidak Aktif', style: statusStyles.inactive };
     };
     
     const formatDateRange = (start: string, end: string) => {

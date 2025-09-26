@@ -36,6 +36,7 @@ const PromotionModal: React.FC<PromotionModalProps> = ({ isOpen, onClose, onSave
         start_date: new Date().toISOString().split('T')[0],
         end_date: '',
         is_cumulative: false,
+        is_active: 1, // Default to active
         outlet_ids: [] as number[],
         rewards: [{ key: Date.now(), reward_type: 'DISCOUNT_PERCENTAGE', value: '', target_id: '', quantity: '1', unit_id: '' }] as RewardItem[],
         conditions: [{ key: Date.now(), condition_type: 'TOTAL_PURCHASE', min_value: '', target_id: '', min_quantity: '' }] as ConditionItem[],
@@ -82,6 +83,7 @@ const PromotionModal: React.FC<PromotionModalProps> = ({ isOpen, onClose, onSave
                         start_date: promoToEdit.start_date,
                         end_date: promoToEdit.end_date,
                         is_cumulative: promoToEdit.is_cumulative,
+                        is_active: promoToEdit.is_active,
                         outlet_ids: promoToEdit.outlets?.map(o => o.id) || [],
                         rewards: promoToEdit.rewards.map((r, i) => ({ ...r, key: Date.now() + i, value: r.value || '', target_id: r.target_id || '', quantity: r.quantity || '1', unit_id: r.unit_id || '' })),
                         conditions: promoToEdit.conditions.map((c, i) => ({ ...c, key: Date.now() + i, min_value: c.min_value || '', target_id: c.target_id || '', min_quantity: c.min_quantity || '' })),
@@ -147,6 +149,7 @@ const PromotionModal: React.FC<PromotionModalProps> = ({ isOpen, onClose, onSave
                 start_date: formState.start_date,
                 end_date: formState.end_date,
                 is_cumulative: formState.is_cumulative,
+                is_active: formState.is_active,
                 outlet_ids: formState.outlet_ids,
                 rewards: formState.rewards.map(({ key, ...r }) => ({ 
                     ...r, 
@@ -207,7 +210,14 @@ const PromotionModal: React.FC<PromotionModalProps> = ({ isOpen, onClose, onSave
                             <input type="text" placeholder="Deskripsi (Opsional)" value={formState.description} onChange={e => handleFormChange('description', e.target.value)} className="input md:col-span-2" />
                             <div><label className="text-sm">Tanggal Mulai *</label><input type="date" value={formState.start_date} onChange={e => handleFormChange('start_date', e.target.value)} className="input" required /></div>
                             <div><label className="text-sm">Tanggal Selesai *</label><input type="date" value={formState.end_date} onChange={e => handleFormChange('end_date', e.target.value)} className="input" min={formState.start_date} required /></div>
-                            <label className="flex items-center space-x-2"><input type="checkbox" checked={formState.is_cumulative} onChange={e => handleFormChange('is_cumulative', e.target.checked)} className="h-4 w-4 rounded" /><span>Promo bersifat kumulatif</span></label>
+                             <div>
+                                <label className="text-sm">Status Promo</label>
+                                <select name="is_active" value={formState.is_active} onChange={e => handleFormChange('is_active', Number(e.target.value))} className="input">
+                                    <option value={1}>Aktif</option>
+                                    <option value={0}>Tidak Aktif</option>
+                                </select>
+                            </div>
+                            <label className="flex items-center space-x-2 self-end mb-1"><input type="checkbox" checked={formState.is_cumulative} onChange={e => handleFormChange('is_cumulative', e.target.checked)} className="h-4 w-4 rounded" /><span>Promo bersifat kumulatif</span></label>
                         </div>
                     </div>
                     
