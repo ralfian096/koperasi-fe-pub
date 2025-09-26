@@ -1,5 +1,4 @@
-
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import usePosData from '../hooks/usePosData';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { CashIcon, ShoppingCartIcon, TagIcon } from './icons/Icons';
@@ -47,11 +46,15 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({ selectedBusinessUnit = null }) => {
-    const { businessUnits, outlets, products, transactions, categories, operationalCosts, variants } = usePosData();
+    const { businessUnits, outlets, products, transactions, categories, variants } = usePosData();
+    
+    // --- State for API-driven summary report ---
+    const [summaryReport, setSummaryReport] = useState<any[]>([]);
+    const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+    const [summaryDatePeriod, setSummaryDatePeriod] = useState('');
 
     const {
         filteredTransactions,
-        filteredOperationalCosts,
         filteredProducts,
         filteredVariants,
         title
@@ -62,14 +65,12 @@ const Dashboard: React.FC<DashboardProps> = ({ selectedBusinessUnit = null }) =>
                 .map(o => o.id);
 
             const filteredTransactions = transactions.filter(t => outletIdsInUnit.includes(t.outletId));
-            const filteredOperationalCosts = operationalCosts.filter(c => outletIdsInUnit.includes(c.outletId));
             const filteredProducts = products.filter(p => outletIdsInUnit.includes(p.outletId));
             const productIds = filteredProducts.map(p => p.id);
             const filteredVariants = variants.filter(v => productIds.includes(v.productId));
             
             return {
                 filteredTransactions,
-                filteredOperationalCosts,
                 filteredProducts,
                 filteredVariants,
                 title: `Dasbor: ${selectedBusinessUnit.name}`
@@ -78,12 +79,74 @@ const Dashboard: React.FC<DashboardProps> = ({ selectedBusinessUnit = null }) =>
         
         return {
             filteredTransactions: transactions,
-            filteredOperationalCosts: operationalCosts,
             filteredProducts: products,
             filteredVariants: variants,
             title: 'Dasbor Keseluruhan'
         };
-    }, [selectedBusinessUnit, outlets, products, transactions, operationalCosts, variants]);
+    }, [selectedBusinessUnit, outlets, products, transactions, variants]);
+
+    // --- Fetch summary report from income statement API ---
+    useEffect(() => {
+        // Only run on the overall dashboard and when business units are loaded
+        if (selectedBusinessUnit || businessUnits.length === 0) {
+            setSummaryReport([]);
+            return;
+        }
+
+        const fetchSummaryData = async () => {
+            setIsSummaryLoading(true);
+            
+            const today = new Date();
+            const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            const startDate = firstDayOfMonth.toISOString().split('T')[0];
+            const endDate = today.toISOString().split('T')[0];
+
+            setSummaryDatePeriod(`Periode: ${firstDayOfMonth.toLocaleDateString('id-ID', {day: '2-digit', month: 'short', year: 'numeric'})} - ${today.toLocaleDateString('id-ID', {day: '2-digit', month: 'short', year: 'numeric'})}`);
+
+            try {
+                const promises = businessUnits.map(unit =>
+                    fetch(`https://api.majukoperasiku.my.id/manage/finance/reports/income-statement?business_id=${unit.id}&start_date=${startDate}&end_date=${endDate}`)
+                        .then(res => res.ok ? res.json() : Promise.resolve(null)) // Continue even if one fails
+                );
+
+                const results = await Promise.all(promises);
+
+                const newSummaryData = results
+                    .map((result, index) => {
+                        if (result && result.code === 200 && result.data) {
+                            return {
+                                unitId: businessUnits[index].id,
+                                unitName: businessUnits[index].name,
+                                pendapatan: result.data.revenues.total,
+                                pengeluaran: result.data.expenses.total,
+                                netProfit: result.data.net_profit,
+                            };
+                        }
+                        // Handle cases where an API call for a unit might fail
+                        console.warn(`Gagal mengambil ringkasan untuk unit: ${businessUnits[index].name}`);
+                        return {
+                            unitId: businessUnits[index].id,
+                            unitName: businessUnits[index].name,
+                            pendapatan: 0,
+                            pengeluaran: 0,
+                            netProfit: 0,
+                            error: true
+                        };
+                    });
+
+                setSummaryReport(newSummaryData);
+
+            } catch (error) {
+                console.error("Gagal mengambil data laporan ringkas:", error);
+                setSummaryReport([]); // Clear on major failure
+            } finally {
+                setIsSummaryLoading(false);
+            }
+        };
+
+        fetchSummaryData();
+
+    }, [selectedBusinessUnit, businessUnits]);
 
 
     const categoryMap = useMemo(() => 
@@ -117,50 +180,15 @@ const Dashboard: React.FC<DashboardProps> = ({ selectedBusinessUnit = null }) =>
             return acc;
         }, [] as { name: string; penjualan: number }[]);
 
-    const summaryReport = useMemo(() => {
-        if (selectedBusinessUnit) return []; // Only calculate for overall dashboard
-
-        return businessUnits.map(unit => {
-            const outletIdsInUnit = outlets.filter(o => o.businessUnitId === unit.id).map(o => o.id);
-
-            const unitTransactions = transactions.filter(t => outletIdsInUnit.includes(t.outletId));
-            const unitCosts = operationalCosts.filter(c => outletIdsInUnit.includes(c.outletId));
-
-            const omzet = unitTransactions
-                .filter(t => t.status === 'Selesai')
-                .reduce((sum, t) => sum + t.total, 0);
-                
-            const totalCost = unitCosts.reduce((sum, c) => sum + c.amount, 0);
-            
-            const profitLoss = omzet - totalCost;
-
-            return {
-                unitId: unit.id,
-                unitName: unit.name,
-                omzet,
-                totalCost,
-                profitLoss
-            };
-        });
-    }, [selectedBusinessUnit, businessUnits, outlets, transactions, operationalCosts]);
-    
-    const totalOverallOmzet = summaryReport.reduce((sum, report) => sum + report.omzet, 0);
-    const totalOverallCost = summaryReport.reduce((sum, report) => sum + report.totalCost, 0);
-    const totalOverallProfitLoss = totalOverallOmzet - totalOverallCost;
-
-    const datePeriod = useMemo(() => {
-        if (filteredTransactions.length === 0) {
-            return "Tidak ada data transaksi";
-        }
-        const dates = filteredTransactions.map(t => t.date.getTime());
-        const minDate = new Date(Math.min(...dates));
-        const maxDate = new Date(Math.max(...dates));
-        const options: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'long', year: 'numeric' };
-        if (minDate.toDateString() === maxDate.toDateString()) {
-            return minDate.toLocaleDateString('id-ID', options);
-        }
-        return `${minDate.toLocaleDateString('id-ID', options)} - ${maxDate.toLocaleDateString('id-ID', options)}`;
-    }, [filteredTransactions]);
+    // Calculate totals from the new API-driven summary report
+    const { totalPendapatan, totalPengeluaran, totalNetProfit } = useMemo(() => {
+        return summaryReport.reduce((acc, report) => {
+            acc.totalPendapatan += report.pendapatan || 0;
+            acc.totalPengeluaran += report.pengeluaran || 0;
+            acc.totalNetProfit += report.netProfit || 0;
+            return acc;
+        }, { totalPendapatan: 0, totalPengeluaran: 0, totalNetProfit: 0 });
+    }, [summaryReport]);
 
 
     const lowStockVariants = filteredVariants.filter(v => v.stock < 10).sort((a, b) => a.stock - b.stock).slice(0, 5);
@@ -195,7 +223,7 @@ const Dashboard: React.FC<DashboardProps> = ({ selectedBusinessUnit = null }) =>
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
                             <div>
                                 <h3 className="text-xl font-bold text-slate-800">Laporan Ringkas per Unit Usaha</h3>
-                                <p className="text-sm text-slate-500">Periode: {datePeriod}</p>
+                                <p className="text-sm text-slate-500">{summaryDatePeriod}</p>
                             </div>
                         </div>
                         <div className="overflow-x-auto">
@@ -203,36 +231,45 @@ const Dashboard: React.FC<DashboardProps> = ({ selectedBusinessUnit = null }) =>
                                 <thead className="border-b-2 border-slate-200 bg-slate-50">
                                     <tr>
                                         <th className="px-4 py-2 text-left text-xs font-semibold text-slate-600 uppercase">Unit Bisnis</th>
-                                        <th className="px-4 py-2 text-right text-xs font-semibold text-slate-600 uppercase">Omzet</th>
-                                        <th className="px-4 py-2 text-right text-xs font-semibold text-slate-600 uppercase">Laba/Rugi</th>
+                                        <th className="px-4 py-2 text-right text-xs font-semibold text-slate-600 uppercase">Pendapatan</th>
+                                        <th className="px-4 py-2 text-right text-xs font-semibold text-slate-600 uppercase">Pengeluaran</th>
+                                        <th className="px-4 py-2 text-right text-xs font-semibold text-slate-600 uppercase">Net Profit</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {summaryReport.length > 0 ? (
+                                    {isSummaryLoading ? (
+                                        <tr>
+                                            <td colSpan={4} className="text-center py-6 text-slate-500">Memuat laporan ringkas...</td>
+                                        </tr>
+                                    ) : summaryReport.length > 0 ? (
                                         summaryReport.map(report => (
                                             <tr key={report.unitId} className="border-b border-slate-100 last:border-b-0">
                                                 <td className="px-4 py-3 font-medium text-slate-800">{report.unitName}</td>
-                                                <td className="px-4 py-3 text-right text-slate-700">{formatCurrency(report.omzet)}</td>
-                                                <td className={`px-4 py-3 text-right font-semibold ${report.profitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                    {formatCurrency(report.profitLoss)}
+                                                <td className="px-4 py-3 text-right text-slate-700">{formatCurrency(report.pendapatan)}</td>
+                                                <td className="px-4 py-3 text-right text-red-600">{formatCurrency(report.pengeluaran)}</td>
+                                                <td className={`px-4 py-3 text-right font-semibold ${report.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                                    {formatCurrency(report.netProfit)}
                                                 </td>
                                             </tr>
                                         ))
                                     ) : (
                                         <tr>
-                                            <td colSpan={3} className="text-center py-6 text-slate-500">Tidak ada data untuk ditampilkan.</td>
+                                            <td colSpan={4} className="text-center py-6 text-slate-500">Tidak ada data untuk ditampilkan.</td>
                                         </tr>
                                     )}
                                 </tbody>
+                                {!isSummaryLoading && (
                                 <tfoot className="bg-slate-50 border-t-2 border-slate-200">
                                     <tr>
                                         <th className="px-4 py-3 text-left text-sm font-bold text-slate-800">Total Keseluruhan</th>
-                                        <td className="px-4 py-3 text-right text-sm font-bold text-slate-800">{formatCurrency(totalOverallOmzet)}</td>
-                                        <td className={`px-4 py-3 text-right text-sm font-bold ${totalOverallProfitLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                            {formatCurrency(totalOverallProfitLoss)}
+                                        <td className="px-4 py-3 text-right text-sm font-bold text-slate-800">{formatCurrency(totalPendapatan)}</td>
+                                        <td className="px-4 py-3 text-right text-sm font-bold text-red-600">{formatCurrency(totalPengeluaran)}</td>
+                                        <td className={`px-4 py-3 text-right text-sm font-bold ${totalNetProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                            {formatCurrency(totalNetProfit)}
                                         </td>
                                     </tr>
                                 </tfoot>
+                                )}
                             </table>
                         </div>
                     </div>

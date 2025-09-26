@@ -1,16 +1,9 @@
 
 
-
-
 import { useState, useEffect, useCallback, Dispatch, SetStateAction } from 'react';
 import { Product, Transaction, TransactionItem, BusinessUnit, Outlet, Member, Employee, OperationalCost, User, ProductCategory, OperationalCostCategory, Variant, RentalResource, ResourceAvailability, Customer, CustomerCategory, Pengajuan, PengajuanItem } from '../types';
 
 // Mock Data Generators
-const generateInitialBusinessUnits = (): BusinessUnit[] => [
-  { id: 1, logo: null, name: 'Kopi Kenangan', email: 'cs@kopikenangan.com', contact: '08111222333', description: 'Sebuah brand kopi kekinian di Indonesia.', website: 'https://kopikenangan.com', instagram: 'kopikenangan.id', tiktok: '@kopikenangan.id', is_active: '1' },
-  { id: 2, logo: null, name: 'Penyewaan Biliar & Pesta', email: 'info@sewabiliar.com', contact: '08998887776', description: 'Penyewaan meja biliar dan perlengkapan pesta.', website: null, instagram: null, tiktok: null, is_active: '1' },
-];
-
 const generateInitialOutlets = (units: BusinessUnit[]): Outlet[] => [
   { id: 101, name: 'KK - Grand Indonesia', businessUnitId: 1 },
   { id: 102, name: 'KK - Senayan City', businessUnitId: 1 },
@@ -205,7 +198,7 @@ function useLocalStorageState<T>(key: string, generator: () => T): [T, Dispatch<
 
 
 const usePosData = () => {
-    const [businessUnits, setBusinessUnits] = useLocalStorageState('pos-businessUnits', generateInitialBusinessUnits);
+    const [businessUnits, setBusinessUnits] = useState<BusinessUnit[]>([]);
     const [outlets, setOutlets] = useLocalStorageState('pos-outlets', () => generateInitialOutlets(businessUnits));
     const [products, setProducts] = useLocalStorageState('pos-products', generateInitialProducts);
     
@@ -230,6 +223,31 @@ const usePosData = () => {
     
     // Product Categories from API
     const [categories, setCategories] = useState<ProductCategory[]>([]);
+    
+    const refetchBusinessUnits = useCallback(async () => {
+        try {
+            const response = await fetch(`https://api.majukoperasiku.my.id/manage/business`);
+            if (!response.ok) {
+                console.error(`Gagal mengambil data unit bisnis`);
+                setBusinessUnits([]); // Set to empty on failure
+                return;
+            }
+            const result = await response.json();
+            if (result.code === 200 && result.data && Array.isArray(result.data.data)) {
+                setBusinessUnits(result.data.data);
+            } else {
+                 setBusinessUnits([]); // Set to empty on failure or invalid format
+            }
+        } catch (error) {
+            console.error("Error fetching business units:", error);
+            setBusinessUnits([]);
+        }
+    }, []);
+
+    useEffect(() => {
+        refetchBusinessUnits();
+    }, [refetchBusinessUnits]);
+    
     const refetchCategories = useCallback(async () => {
         if (businessUnits.length === 0) {
             setCategories([]);
@@ -271,20 +289,6 @@ const usePosData = () => {
         refetchCategories();
     }, [refetchCategories]);
 
-
-    // Business Unit CRUD
-    const addBusinessUnit = (unit: Omit<BusinessUnit, 'id'>) => {
-        const newUnit: BusinessUnit = { ...unit, id: Date.now() };
-        setBusinessUnits(prev => [...prev, newUnit]);
-    };
-    const updateBusinessUnit = (updatedUnit: BusinessUnit) => {
-        setBusinessUnits(prev => prev.map(u => u.id === updatedUnit.id ? updatedUnit : u));
-    };
-    const deleteBusinessUnit = (unitId: number) => {
-        const outletsToDelete = outlets.filter(o => o.businessUnitId === unitId);
-        outletsToDelete.forEach(outlet => deleteOutlet(outlet.id));
-        setBusinessUnits(prev => prev.filter(u => u.id !== unitId));
-    };
 
     // Outlet CRUD
     const addOutlet = (outlet: Omit<Outlet, 'id'>) => {
@@ -439,7 +443,7 @@ const usePosData = () => {
         variants, rentalResources, resourceAvailabilities,
         customerCategories, customers,
         refetchCategories,
-        addBusinessUnit, updateBusinessUnit, deleteBusinessUnit,
+        refetchBusinessUnits,
         addOutlet, updateOutlet, deleteOutlet,
         addProduct, updateProduct, deleteProduct, 
         addOperationalCost, updateOperationalCost, deleteOperationalCost,
