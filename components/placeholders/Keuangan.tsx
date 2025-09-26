@@ -4,6 +4,8 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNotification } from '../../contexts/NotificationContext';
 import { SubView } from '../../App';
 import { JournalEntry, IncomeStatementData, BalanceSheetData, FinancialRatioData, FinancialRatioDetail, BalanceSheetSection } from '../../types';
+import CashFlowReport from '../../components/CashFlowReport';
+import EquityChangeReport from '../../components/EquityChangeReport';
 
 const API_BASE_URL = 'https://api.majukoperasiku.my.id/manage';
 const API_FINANCE_URL = `${API_BASE_URL}/finance`;
@@ -349,6 +351,8 @@ const Keuangan: React.FC<{ subView: SubView | null }> = ({ subView }) => {
             case 'jurnal-umum': return <JurnalUmum />;
             case 'laporan-phu': return <LaporanPHU />;
             case 'laporan-neraca': return <LaporanNeraca />;
+            case 'cash-flow-report': return <CashFlowReport />;
+            case 'equity-change-report': return <EquityChangeReport />;
             case 'rasio-keuangan': return <RasioKeuangan />;
             default: return <JurnalUmum />; // Default to Jurnal
         }

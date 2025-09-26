@@ -170,6 +170,7 @@ export interface ChartOfAccount {
   account_type: 'ASSET' | 'LIABILITY' | 'EQUITY' | 'REVENUE' | 'EXPENSE';
   normal_balance: 'DEBIT' | 'CREDIT';
   is_active: string; // "1" = active, "0" = inactive
+  cash_flow_activity?: 'OPERATING' | 'INVESTING' | 'FINANCING' | null;
   parent?: {
       id: number;
       account_name: string;
@@ -299,7 +300,7 @@ export interface Pengajuan {
   total_amount: number;
   items: PengajuanItem[];
   rejection_reason?: string | null;
-  file_proposal?: string | null;
+  file_path?: string | null;
 }
 
 // Updated types for Promotion to match new API structure
@@ -368,11 +369,10 @@ export interface CashFlowData {
 // New types for Laporan Perubahan Modal / Equity Change Report
 export interface EquityChangeData {
   report_name: string;
-  business_id: string;
   period: string;
   beginning_equity: number;
-  net_income: number;
-  owner_investment: number;
-  owner_withdrawal: number;
+  profit_for_period: number;
+  capital_injections: number;
+  capital_withdrawals: number;
   ending_equity: number;
 }

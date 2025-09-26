@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { BusinessUnit, EquityChangeData } from '../types';
 import { useNotification } from '../contexts/NotificationContext';
 
-const API_ENDPOINT = 'https://api.majukoperasiku.my.id/manage/finance/reports/equity-change';
+const API_BASE_URL = 'https://api.majukoperasiku.my.id/manage/finance/reports';
 
 const formatCurrency = (amount: number | undefined) => {
     if (amount === undefined || amount === null) return 'Rp 0';
@@ -22,7 +22,11 @@ const ReportRow: React.FC<{ label: string; amount: number; isSub?: boolean, isNe
 );
 
 
-const EquityChangeReport: React.FC<{ selectedBusinessUnit: BusinessUnit }> = ({ selectedBusinessUnit }) => {
+interface EquityChangeReportProps {
+    selectedBusinessUnit?: BusinessUnit;
+}
+
+const EquityChangeReport: React.FC<EquityChangeReportProps> = ({ selectedBusinessUnit }) => {
     const { addNotification } = useNotification();
     const today = new Date().toISOString().split('T')[0];
     const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
@@ -31,6 +35,10 @@ const EquityChangeReport: React.FC<{ selectedBusinessUnit: BusinessUnit }> = ({ 
     const [endDate, setEndDate] = useState(today);
     const [reportData, setReportData] = useState<EquityChangeData | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+
+    const isConsolidated = !selectedBusinessUnit;
+    const pageTitle = isConsolidated ? "Laporan Perubahan Modal Konsolidasi" : "Laporan Perubahan Modal";
+    const reportTitle = isConsolidated ? "Konsolidasi Semua Unit Usaha" : selectedBusinessUnit?.name;
 
     const handleGenerateReport = async () => {
         if (!startDate || !endDate) {
@@ -43,11 +51,18 @@ const EquityChangeReport: React.FC<{ selectedBusinessUnit: BusinessUnit }> = ({ 
 
         try {
             const params = new URLSearchParams({
-                business_id: String(selectedBusinessUnit.id),
                 start_date: startDate,
                 end_date: endDate,
             });
-            const response = await fetch(`${API_ENDPOINT}?${params.toString()}`);
+            if (!isConsolidated) {
+                params.append('business_id', String(selectedBusinessUnit.id));
+            }
+
+            const endpoint = isConsolidated
+                ? `${API_BASE_URL}/consolidated/equity-change`
+                : `${API_BASE_URL}/equity-change`;
+
+            const response = await fetch(`${endpoint}?${params.toString()}`);
             const result = await response.json();
 
             if (!response.ok) {
@@ -69,7 +84,7 @@ const EquityChangeReport: React.FC<{ selectedBusinessUnit: BusinessUnit }> = ({ 
     
     return (
         <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-slate-800">Laporan Perubahan Modal</h2>
+            <h2 className="text-3xl font-bold text-slate-800">{pageTitle}</h2>
             
             <div className="p-4 bg-white rounded-lg shadow-md">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
@@ -94,16 +109,16 @@ const EquityChangeReport: React.FC<{ selectedBusinessUnit: BusinessUnit }> = ({ 
                 {reportData && (
                     <div className="max-w-2xl mx-auto font-sans text-sm">
                         <div className="text-center mb-8">
-                            <h3 className="text-xl font-bold text-slate-900">{selectedBusinessUnit.name}</h3>
+                            <h3 className="text-xl font-bold text-slate-900">{reportTitle}</h3>
                             <h4 className="text-lg font-semibold text-slate-800">{reportData.report_name}</h4>
                             <p className="text-sm text-slate-500">Untuk Periode yang Berakhir pada {reportData.period.split('to')[1].trim()}</p>
                         </div>
 
                         <div className="space-y-1">
                             <ReportRow label={`Modal Awal Periode`} amount={reportData.beginning_equity} />
-                            <ReportRow label="Laba Bersih Periode" amount={reportData.net_income} isSub />
-                            <ReportRow label="Setoran Pemilik" amount={reportData.owner_investment} isSub />
-                            <ReportRow label="Penarikan Pemilik" amount={reportData.owner_withdrawal} isSub isNegative/>
+                            <ReportRow label="Laba Periode Berjalan" amount={reportData.profit_for_period} isSub />
+                            <ReportRow label="Setoran Modal" amount={reportData.capital_injections} isSub />
+                            <ReportRow label="Penarikan Modal" amount={reportData.capital_withdrawals} isSub isNegative/>
                             <ReportRow 
                                 label={`Modal Akhir Periode`} 
                                 amount={reportData.ending_equity} 

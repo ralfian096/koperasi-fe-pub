@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { BusinessUnit, CashFlowData, CashFlowSection } from '../types';
 import { useNotification } from '../contexts/NotificationContext';
 
-const API_ENDPOINT = 'https://api.majukoperasiku.my.id/manage/finance/reports/cash-flow';
+const API_BASE_URL = 'https://api.majukoperasiku.my.id/manage/finance/reports';
 
 const formatCurrency = (amount: number | undefined) => {
     if (amount === undefined || amount === null) return 'Rp 0';
@@ -35,7 +35,11 @@ const ReportSection: React.FC<{ title: string; section: CashFlowSection; isNegat
 );
 
 
-const CashFlowReport: React.FC<{ selectedBusinessUnit: BusinessUnit }> = ({ selectedBusinessUnit }) => {
+interface CashFlowReportProps {
+    selectedBusinessUnit?: BusinessUnit;
+}
+
+const CashFlowReport: React.FC<CashFlowReportProps> = ({ selectedBusinessUnit }) => {
     const { addNotification } = useNotification();
     const today = new Date().toISOString().split('T')[0];
     const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
@@ -44,6 +48,10 @@ const CashFlowReport: React.FC<{ selectedBusinessUnit: BusinessUnit }> = ({ sele
     const [endDate, setEndDate] = useState(today);
     const [reportData, setReportData] = useState<CashFlowData | null>(null);
     const [isLoading, setIsLoading] = useState(false);
+
+    const isConsolidated = !selectedBusinessUnit;
+    const pageTitle = isConsolidated ? "Laporan Arus Kas Konsolidasi" : "Laporan Arus Kas";
+    const reportTitle = isConsolidated ? "Konsolidasi Semua Unit Usaha" : selectedBusinessUnit?.name;
 
     const handleGenerateReport = async () => {
         if (!startDate || !endDate) {
@@ -56,11 +64,18 @@ const CashFlowReport: React.FC<{ selectedBusinessUnit: BusinessUnit }> = ({ sele
 
         try {
             const params = new URLSearchParams({
-                business_id: String(selectedBusinessUnit.id),
                 start_date: startDate,
                 end_date: endDate,
             });
-            const response = await fetch(`${API_ENDPOINT}?${params.toString()}`);
+            if (!isConsolidated) {
+                params.append('business_id', String(selectedBusinessUnit.id));
+            }
+            
+            const endpoint = isConsolidated
+                ? `${API_BASE_URL}/consolidated/cash-flow`
+                : `${API_BASE_URL}/cash-flow`;
+
+            const response = await fetch(`${endpoint}?${params.toString()}`);
             const result = await response.json();
 
             if (!response.ok) {
@@ -82,7 +97,7 @@ const CashFlowReport: React.FC<{ selectedBusinessUnit: BusinessUnit }> = ({ sele
     
     return (
         <div className="space-y-6">
-            <h2 className="text-3xl font-bold text-slate-800">Laporan Arus Kas</h2>
+            <h2 className="text-3xl font-bold text-slate-800">{pageTitle}</h2>
             
             <div className="p-4 bg-white rounded-lg shadow-md">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
@@ -107,7 +122,7 @@ const CashFlowReport: React.FC<{ selectedBusinessUnit: BusinessUnit }> = ({ sele
                 {reportData && (
                     <div className="max-w-3xl mx-auto font-sans text-sm">
                         <div className="text-center mb-8">
-                            <h3 className="text-xl font-bold text-slate-900">{selectedBusinessUnit.name}</h3>
+                            <h3 className="text-xl font-bold text-slate-900">{reportTitle}</h3>
                             <h4 className="text-lg font-semibold text-slate-800">{reportData.report_name}</h4>
                             <p className="text-sm text-slate-500">Untuk Periode yang Berakhir pada {reportData.period.split('to')[1].trim()}</p>
                         </div>

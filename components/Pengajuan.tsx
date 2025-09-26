@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Pengajuan as PengajuanType } from '../types';
 import { PlusIcon, EditIcon, TrashIcon, EyeIcon } from './icons/Icons';
@@ -55,7 +54,7 @@ const Pengajuan: React.FC = () => {
                     id: p.id,
                     submitted_at: new Date(p.submitted_at),
                     rejection_reason: p.rejection_reason || null,
-                    file_proposal: p.file_proposal || null,
+                    file_path: p.file_path || null,
                 }));
                 setPengajuanList(mappedData);
             } else {
@@ -214,9 +213,9 @@ const Pengajuan: React.FC = () => {
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-sm font-semibold text-slate-900">{p.title}</span>
-                                                    {p.file_proposal && (
+                                                    {p.file_path && (
                                                         <a 
-                                                            href={`https://api.majukoperasiku.my.id/storage/${p.file_proposal}`} 
+                                                            href={`https://api.majukoperasiku.my.id/storage/${p.file_path}`} 
                                                             target="_blank" 
                                                             rel="noopener noreferrer" 
                                                             title="Lihat Proposal Terlampir"

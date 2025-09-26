@@ -191,9 +191,9 @@ const PengajuanModal: React.FC<PengajuanModalProps> = ({ isOpen, onClose, onSave
                             )}
                             <div className="md:col-span-2">
                                 {isReadOnly ? (
-                                    pengajuanToEdit?.file_proposal ? (
+                                    pengajuanToEdit?.file_path ? (
                                         <DetailViewText label="File Proposal" value={
-                                            <a href={`https://api.majukoperasiku.my.id/storage/${pengajuanToEdit.file_proposal}`} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 font-medium">
+                                            <a href={`https://api.majukoperasiku.my.id/storage/${pengajuanToEdit.file_path}`} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 font-medium">
                                                 Lihat file terlampir
                                             </a>
                                         } />
@@ -203,16 +203,16 @@ const PengajuanModal: React.FC<PengajuanModalProps> = ({ isOpen, onClose, onSave
                                 ) : (
                                     <>
                                         <label htmlFor="proposal-file-input" className="block text-sm font-medium text-slate-600">File Proposal (PDF, Word, Excel)</label>
-                                        {isEditing && pengajuanToEdit?.file_proposal && (
+                                        {isEditing && pengajuanToEdit?.file_path && (
                                             <div className="mt-1">
-                                                <a href={`https://api.majukoperasiku.my.id/storage/${pengajuanToEdit.file_proposal}`} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                                                <a href={`https://api.majukoperasiku.my.id/storage/${pengajuanToEdit.file_path}`} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
                                                     Lihat file terlampir saat ini
                                                 </a>
                                             </div>
                                         )}
                                         <input id="proposal-file-input" type="file" onChange={handleFileChange} accept=".pdf,.doc,.docx,.xls,.xlsx" disabled={isSubmitting} className="input mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
                                         {proposalFile && <div className="mt-1 text-sm text-slate-600">File baru: {proposalFile.name}</div>}
-                                        <p className="text-xs text-slate-500 mt-1">{isEditing && pengajuanToEdit?.file_proposal ? 'Mengunggah file baru akan menggantikan file yang ada.' : 'Opsional. Unggah file proposal jika ada.'}</p>
+                                        <p className="text-xs text-slate-500 mt-1">{isEditing && pengajuanToEdit?.file_path ? 'Mengunggah file baru akan menggantikan file yang ada.' : 'Opsional. Unggah file proposal jika ada.'}</p>
                                     </>
                                 )}
                             </div>

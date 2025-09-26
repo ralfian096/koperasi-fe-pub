@@ -17,6 +17,12 @@ const accountTypeMap: Record<ChartOfAccount['account_type'], string> = {
     EXPENSE: 'Beban',
 };
 
+const cashFlowActivityMap: Record<string, string> = {
+    OPERATING: 'Operasi',
+    INVESTING: 'Investasi',
+    FINANCING: 'Pendanaan',
+};
+
 const accountTypeOptions: { value: ChartOfAccount['account_type']; label: string }[] = [
     { value: 'ASSET', label: 'Aset' },
     { value: 'LIABILITY', label: 'Liabilitas' },
@@ -40,6 +46,7 @@ const CoAModal: React.FC<{
     account_name: '',
     account_type: 'ASSET' as ChartOfAccount['account_type'],
     normal_balance: 'DEBIT' as ChartOfAccount['normal_balance'],
+    cash_flow_activity: '',
     is_active: 1,
   });
   const [isSaving, setIsSaving] = useState(false);
@@ -53,6 +60,7 @@ const CoAModal: React.FC<{
                 account_code: account.account_code,
                 account_type: account.account_type,
                 normal_balance: account.normal_balance,
+                cash_flow_activity: account.cash_flow_activity || '',
                 is_active: Number(account.is_active),
             });
         } else {
@@ -62,6 +70,7 @@ const CoAModal: React.FC<{
                 account_name: '',
                 account_type: 'ASSET',
                 normal_balance: 'DEBIT',
+                cash_flow_activity: '',
                 is_active: 1,
             });
         }
@@ -87,8 +96,10 @@ const CoAModal: React.FC<{
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    const finalValue = name === 'is_active' ? Number(value) : value;
-    setFormData(prev => ({ ...prev, [name]: finalValue }));
+    setFormData(prev => ({ 
+        ...prev, 
+        [name]: name === 'is_active' ? Number(value) : value 
+    }));
   };
   
   const possibleParents = accounts.filter(acc => acc.id !== account?.id);
@@ -121,12 +132,21 @@ const CoAModal: React.FC<{
                 {possibleParents.map(parent => <option key={parent.id} value={parent.id}>{parent.account_code} - {parent.account_name}</option>)}
               </select>
             </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label htmlFor="normal_balance" className="block text-sm font-medium text-slate-600">Saldo Normal *</label>
               <select name="normal_balance" id="normal_balance" value={formData.normal_balance} onChange={handleChange} required disabled={isSaving} className="input">
                   <option value="DEBIT">Debit</option>
                   <option value="CREDIT">Kredit</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="cash_flow_activity" className="block text-sm font-medium text-slate-600">Aktivitas Arus Kas</label>
+              <select name="cash_flow_activity" id="cash_flow_activity" value={formData.cash_flow_activity} onChange={handleChange} disabled={isSaving} className="input">
+                <option value="">Tidak Ditentukan</option>
+                <option value="OPERATING">Operasi</option>
+                <option value="INVESTING">Investasi</option>
+                <option value="FINANCING">Pendanaan</option>
               </select>
             </div>
              <div>
@@ -234,6 +254,7 @@ const ChartOfAccountsManagement: React.FC<ChartOfAccountsManagementProps> = ({ s
             normal_balance: formData.normal_balance,
             is_active: formData.is_active,
             parent_id: formData.parent_id ? Number(formData.parent_id) : null,
+            cash_flow_activity: formData.cash_flow_activity || null,
         };
 
         try {
@@ -293,6 +314,7 @@ const ChartOfAccountsManagement: React.FC<ChartOfAccountsManagementProps> = ({ s
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-700">{account.account_code}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{accountTypeMap[account.account_type]}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{account.normal_balance}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{account.cash_flow_activity ? cashFlowActivityMap[account.cash_flow_activity] : '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap"><span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${account.is_active === '1' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{account.is_active === '1' ? 'Aktif' : 'Tidak Aktif'}</span></td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <button onClick={() => handleOpenModal(account)} className="text-red-600 hover:text-red-900 mr-4"><EditIcon className="w-5 h-5"/></button>
@@ -331,17 +353,18 @@ const ChartOfAccountsManagement: React.FC<ChartOfAccountsManagementProps> = ({ s
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Kode Akun</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Tipe</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Saldo Normal</th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Aktivitas Arus Kas</th>
                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
                                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Aksi</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-slate-200">
                             {isLoading ? (
-                                <tr><td colSpan={6} className="text-center py-10 text-slate-500">Memuat data...</td></tr>
+                                <tr><td colSpan={7} className="text-center py-10 text-slate-500">Memuat data...</td></tr>
                             ) : sortedRootAccounts.length > 0 ? (
                                 sortedRootAccounts.map(account => <AccountRow key={account.id} account={account} level={0} />)
                             ) : (
-                                <tr><td colSpan={6} className="text-center py-10 text-slate-500">Tidak ada akun yang terdaftar untuk unit usaha ini.</td></tr>
+                                <tr><td colSpan={7} className="text-center py-10 text-slate-500">Tidak ada akun yang terdaftar untuk unit usaha ini.</td></tr>
                             )}
                         </tbody>
                     </table>

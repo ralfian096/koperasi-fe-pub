@@ -145,6 +145,8 @@ const KeuanganSidebar: React.FC<{
             <NavLink view="jurnal-umum" label="Jurnal Umum" icon={ReportIcon} currentView={currentView} setCurrentView={setCurrentView} />
             <NavLink view="laporan-phu" label="Laporan PHU" icon={ReportIcon} currentView={currentView} setCurrentView={setCurrentView} />
             <NavLink view="laporan-neraca" label="Laporan Neraca" icon={ReportIcon} currentView={currentView} setCurrentView={setCurrentView} />
+            <NavLink view="cash-flow-report" label="Laporan Arus Kas" icon={ReportIcon} currentView={currentView} setCurrentView={setCurrentView} />
+            <NavLink view="equity-change-report" label="Laporan Perubahan Modal" icon={ReportIcon} currentView={currentView} setCurrentView={setCurrentView} />
             <NavLink view="rasio-keuangan" label="Rasio Keuangan" icon={ScaleIcon} currentView={currentView} setCurrentView={setCurrentView} />
         </ul>
     );

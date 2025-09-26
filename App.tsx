@@ -130,7 +130,7 @@ const App: React.FC = () => {
       }
     }
     if (mainView === 'keuangan') {
-        const validKeuanganViews: SubView[] = ['jurnal-umum', 'laporan-phu', 'laporan-neraca', 'rasio-keuangan'];
+        const validKeuanganViews: SubView[] = ['jurnal-umum', 'laporan-phu', 'laporan-neraca', 'cash-flow-report', 'equity-change-report', 'rasio-keuangan'];
         if (!subView || !validKeuanganViews.includes(subView)) {
             setSubView('jurnal-umum');
         }
