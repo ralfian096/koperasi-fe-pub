@@ -324,20 +324,20 @@ export interface PromotionCondition {
 }
 
 export interface PromotionSchedule {
-  day_of_week: number;
+  day_of_week: number | string;
   start_time: string;
   end_time: string;
 }
 
 export interface Promotion {
   id: number;
-  business_id: number;
+  business_id: number | string;
   name: string;
   description: string | null;
   start_date: string; // ISO string date
   end_date: string; // ISO string date
-  is_active: number; // 1 or 0
-  is_cumulative: boolean;
+  is_active: number | string;
+  is_cumulative: boolean | number | string;
   rewards: PromotionReward[];
   conditions: PromotionCondition[];
   schedules: PromotionSchedule[];

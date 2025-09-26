@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { BusinessUnit, Promotion } from '../types';
 import { useNotification } from '../contexts/NotificationContext';
@@ -82,12 +81,12 @@ const PromotionModal: React.FC<PromotionModalProps> = ({ isOpen, onClose, onSave
                         description: promoToEdit.description || '',
                         start_date: promoToEdit.start_date,
                         end_date: promoToEdit.end_date,
-                        is_cumulative: promoToEdit.is_cumulative,
-                        is_active: promoToEdit.is_active,
+                        is_cumulative: !!Number(promoToEdit.is_cumulative),
+                        is_active: Number(promoToEdit.is_active),
                         outlet_ids: promoToEdit.outlets?.map(o => o.id) || [],
                         rewards: promoToEdit.rewards.map((r, i) => ({ ...r, key: Date.now() + i, value: r.value || '', target_id: r.target_id || '', quantity: r.quantity || '1', unit_id: r.unit_id || '' })),
                         conditions: promoToEdit.conditions.map((c, i) => ({ ...c, key: Date.now() + i, min_value: c.min_value || '', target_id: c.target_id || '', min_quantity: c.min_quantity || '' })),
-                        schedules: promoToEdit.schedules.length > 0 ? promoToEdit.schedules.map((s, i) => ({ ...s, key: Date.now() + i })) : [],
+                        schedules: promoToEdit.schedules.length > 0 ? promoToEdit.schedules.map((s, i) => ({ ...s, day_of_week: Number(s.day_of_week), key: Date.now() + i })) : [],
                     });
                 } else {
                     setFormState(getInitialState());

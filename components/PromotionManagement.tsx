@@ -61,7 +61,7 @@ const PromotionManagement: React.FC<{ selectedBusinessUnit: BusinessUnit }> = ({
     
     // Helper functions for formatting display
     const getStatus = (promo: Promotion): { text: string; style: string } => {
-        if (promo.is_active === 1) {
+        if (promo.is_active == 1) { // Use loose equality to handle "1" and 1
             return { text: 'Aktif', style: statusStyles.active };
         }
         return { text: 'Tidak Aktif', style: statusStyles.inactive };
