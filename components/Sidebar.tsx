@@ -106,6 +106,7 @@ const UsahaSidebar: React.FC<{
             </CollapsibleNavGroup>
             
             <NavLink view="transactions" label="Transaksi" icon={TransactionIcon} currentView={currentView} setCurrentView={setCurrentView} />
+            <NavLink view="promotions" label="Promo" icon={TagIcon} currentView={currentView} setCurrentView={setCurrentView} />
             <NavLink view="employees" label="Karyawan" icon={EmployeeIcon} currentView={currentView} setCurrentView={setCurrentView} />
             <NavLink view="taxes" label="Pajak" icon={BanknotesIcon} currentView={currentView} setCurrentView={setCurrentView} />
             
@@ -114,6 +115,8 @@ const UsahaSidebar: React.FC<{
                 <NavLink view="jurnal" label="Jurnal" icon={ReportIcon} currentView={currentView} setCurrentView={setCurrentView} isSubItem />
                 <NavLink view="profit-loss-report" label="Laporan PHU" icon={ReportIcon} currentView={currentView} setCurrentView={setCurrentView} isSubItem />
                 <NavLink view="balance-sheet-report" label="Laporan Neraca" icon={ReportIcon} currentView={currentView} setCurrentView={setCurrentView} isSubItem />
+                <NavLink view="cash-flow-report" label="Laporan Arus Kas" icon={ReportIcon} currentView={currentView} setCurrentView={setCurrentView} isSubItem />
+                <NavLink view="equity-change-report" label="Laporan Perubahan Modal" icon={ReportIcon} currentView={currentView} setCurrentView={setCurrentView} isSubItem />
                 <NavLink view="financial-ratio-report" label="Rasio Keuangan" icon={ScaleIcon} currentView={currentView} setCurrentView={setCurrentView} isSubItem />
             </CollapsibleNavGroup>
         </ul>

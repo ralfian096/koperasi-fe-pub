@@ -32,6 +32,9 @@ import RasioKeuangan from './components/RasioKeuangan';
 import ChartOfAccountsManagement from './components/ChartOfAccountsManagement';
 import PaymentMethodManagement from './components/PaymentMethodManagement';
 import UnitManagement from './components/UnitManagement';
+import PromotionManagement from './components/PromotionManagement';
+import CashFlowReport from './components/CashFlowReport';
+import EquityChangeReport from './components/EquityChangeReport';
 
 
 export type MainView = 'dashboard' | 'usaha' | 'pengajuan' | 'koperasi' | 'keuangan' | 'pengaturan';
@@ -64,7 +67,12 @@ export type SubView =
   | 'jurnal-umum'
   | 'laporan-phu'
   | 'laporan-neraca'
-  | 'rasio-keuangan';
+  | 'rasio-keuangan'
+  // New view for Usaha detail
+  | 'promotions'
+  // New financial reports
+  | 'cash-flow-report'
+  | 'equity-change-report';
 
 
 const App: React.FC = () => {
@@ -184,6 +192,8 @@ const App: React.FC = () => {
         return <ProductCategoryManagement selectedBusinessUnit={selectedBusinessUnit} />;
       case 'transactions':
         return <TransactionHistory selectedBusinessUnit={selectedBusinessUnit} />;
+      case 'promotions':
+        return <PromotionManagement selectedBusinessUnit={selectedBusinessUnit} />;
       case 'employees':
         return <EmployeeManagement />;
       case 'customers':
@@ -203,6 +213,10 @@ const App: React.FC = () => {
         return <RasioKeuangan selectedBusinessUnit={selectedBusinessUnit} />;
       case 'chart-of-accounts':
         return <ChartOfAccountsManagement selectedBusinessUnit={selectedBusinessUnit} />;
+      case 'cash-flow-report':
+        return <CashFlowReport selectedBusinessUnit={selectedBusinessUnit} />;
+      case 'equity-change-report':
+        return <EquityChangeReport selectedBusinessUnit={selectedBusinessUnit} />;
       default:
         return <Dashboard selectedBusinessUnit={selectedBusinessUnit} />;
     }

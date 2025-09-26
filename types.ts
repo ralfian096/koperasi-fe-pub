@@ -1,6 +1,5 @@
 
 
-
 export interface BusinessUnit {
   id: number;
   logo: string | null;
@@ -301,4 +300,79 @@ export interface Pengajuan {
   items: PengajuanItem[];
   rejection_reason?: string | null;
   file_proposal?: string | null;
+}
+
+// Updated types for Promotion to match new API structure
+export interface PromotionReward {
+  id: number;
+  promo_id: string;
+  reward_type: 'FREE_VARIANT' | 'DISCOUNT_FIXED' | 'DISCOUNT_PERCENTAGE' | 'FREE_RESOURCE';
+  value: string | null; // For fixed/percentage discounts
+  target_id: string | null; // For free variant/resource
+  quantity: string | null; // For free variant/resource
+  unit_id: string | null;
+}
+
+export interface PromotionCondition {
+  id: number;
+  promo_id: string;
+  condition_type: 'PRODUCT_VARIANT' | 'PRODUCT_CATEGORY' | 'TOTAL_PURCHASE' | 'PACKAGE';
+  min_value: string | null; // For total purchase
+  target_id: string | null; // For product/category conditions
+  min_quantity: string | null; // For product/category conditions
+}
+
+export interface PromotionSchedule {
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+}
+
+export interface Promotion {
+  id: number;
+  business_id: number;
+  name: string;
+  description: string | null;
+  start_date: string; // ISO string date
+  end_date: string; // ISO string date
+  is_active: number; // 1 or 0
+  is_cumulative: boolean;
+  rewards: PromotionReward[];
+  conditions: PromotionCondition[];
+  schedules: PromotionSchedule[];
+  outlets?: { id: number; name: string; }[];
+}
+
+// New types for Laporan Arus Kas / Cash Flow Report
+export interface CashFlowAccount {
+  account_code: string;
+  account_name: string;
+  total: number;
+}
+export interface CashFlowSection {
+  accounts: CashFlowAccount[];
+  total: number;
+}
+export interface CashFlowData {
+  report_name: string;
+  business_id: string;
+  period: string;
+  operating_activities: CashFlowSection;
+  investing_activities: CashFlowSection;
+  financing_activities: CashFlowSection;
+  net_cash_flow: number;
+  beginning_cash_balance: number;
+  ending_cash_balance: number;
+}
+
+// New types for Laporan Perubahan Modal / Equity Change Report
+export interface EquityChangeData {
+  report_name: string;
+  business_id: string;
+  period: string;
+  beginning_equity: number;
+  net_income: number;
+  owner_investment: number;
+  owner_withdrawal: number;
+  ending_equity: number;
 }
