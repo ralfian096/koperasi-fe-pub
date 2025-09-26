@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { EditIcon, TrashIcon, PlusIcon } from './icons/Icons';
 import { useNotification } from '../contexts/NotificationContext';
@@ -13,7 +12,7 @@ interface ApiPaymentMethod {
   type: 'CASH' | 'EDC' | 'QRIS' | 'OTHER';
   logo: string | null;
   description: string | null;
-  is_active: number; // 1 for active, 0 for inactive
+  is_active: number | string; // 1 for active, 0 for inactive
 }
 
 const typeDisplayMap: Record<ApiPaymentMethod['type'], string> = {
@@ -47,7 +46,7 @@ const PaymentMethodModal: React.FC<{
           type: method.type,
           logo: method.logo || '',
           description: method.description || '',
-          is_active: method.is_active,
+          is_active: Number(method.is_active),
         });
       } else {
         setFormData({
@@ -253,9 +252,9 @@ const PaymentMethodManagement: React.FC = () => {
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{typeDisplayMap[method.type]}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                                            method.is_active === 1 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                                            method.is_active == 1 ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                                         }`}>
-                                            {method.is_active === 1 ? 'Aktif' : 'Tidak Aktif'}
+                                            {method.is_active == 1 ? 'Aktif' : 'Tidak Aktif'}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
