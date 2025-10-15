@@ -9,9 +9,9 @@ const Pengajuan: React.FC = () => {
                 Fitur untuk pengajuan Rencana Anggaran Biaya (RAB) akan tersedia di sini.
                 Anda dapat membuat, mengirim, dan melacak status pengajuan RAB untuk berbagai keperluan operasional.
             </p>
-            <div className="mt-6 p-4 border-l-4 border-indigo-500 bg-indigo-50">
-                <p className="font-semibold text-indigo-800">Fitur yang Direncanakan:</p>
-                <ul className="list-disc list-inside text-indigo-700 mt-2">
+            <div className="mt-6 p-4 border-l-4 border-primary-500 bg-primary-50">
+                <p className="font-semibold text-primary-800">Fitur yang Direncanakan:</p>
+                <ul className="list-disc list-inside text-primary-700 mt-2">
                     <li>Formulir Pengajuan RAB</li>
                     <li>Alur Persetujuan (Approval Workflow)</li>
                     <li>Pelacakan Status Pengajuan</li>

@@ -93,8 +93,8 @@ const BusinessUnitCard: React.FC<{
             {/* Card Stats */}
             <div className="space-y-3 pt-2">
                 <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 flex items-center justify-center bg-violet-50 rounded-full">
-                        <BuildingStorefrontIcon className="w-5 h-5 text-violet-600" />
+                    <div className="w-9 h-9 flex items-center justify-center bg-primary-50 rounded-full">
+                        <BuildingStorefrontIcon className="w-5 h-5 text-primary-600" />
                     </div>
                     <div>
                         <p className="font-bold text-slate-800 text-base">{unit.outlets?.length || 0}</p>
@@ -117,7 +117,7 @@ const BusinessUnitCard: React.FC<{
                 </button>
                 <button 
                     onClick={() => onSelect(unit)}
-                    className="h-10 px-4 bg-indigo-600 text-white rounded-lg font-semibold text-sm flex-1 hover:bg-indigo-700 transition-colors"
+                    className="h-10 px-4 bg-primary-600 text-white rounded-lg font-semibold text-sm flex-1 hover:bg-primary-700 transition-colors"
                 >
                     Buka Portal
                 </button>
@@ -166,7 +166,7 @@ const BusinessUnitListItem: React.FC<{
                     </button>
                     <button 
                         onClick={() => onSelect(unit)}
-                        className="h-9 px-4 bg-indigo-600 text-white rounded-lg font-semibold text-sm flex-1 hover:bg-indigo-700 transition-colors"
+                        className="h-9 px-4 bg-primary-600 text-white rounded-lg font-semibold text-sm flex-1 hover:bg-primary-700 transition-colors"
                     >
                         Buka Portal
                     </button>
@@ -329,7 +329,7 @@ const BusinessUnitSelector: React.FC<BusinessUnitSelectorProps> = ({ onSelectUni
             return (
                  <div className="text-center py-12 bg-white rounded-lg shadow-sm border">
                     <p className="text-slate-500">{searchQuery ? 'Tidak ada hasil yang cocok.' : 'Tidak ada unit usaha yang ditemukan.'}</p>
-                     <button onClick={handleOpenAddModal} className="mt-4 h-10 px-4 bg-indigo-600 text-white rounded-lg font-semibold text-sm hover:bg-indigo-700 transition-colors">
+                     <button onClick={handleOpenAddModal} className="mt-4 h-10 px-4 bg-primary-600 text-white rounded-lg font-semibold text-sm hover:bg-primary-700 transition-colors">
                         + Tambah Usaha Baru
                     </button>
                 </div>
@@ -408,7 +408,7 @@ const BusinessUnitSelector: React.FC<BusinessUnitSelectorProps> = ({ onSelectUni
                             placeholder="Cari unit usaha..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="h-10 pl-10 pr-4 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full sm:w-auto"
+                            className="h-10 pl-10 pr-4 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500 w-full sm:w-auto"
                         />
                     </div>
                      <button onClick={handleOpenAddModal} className="h-10 px-4 bg-white border border-slate-300 rounded-lg text-slate-800 font-semibold text-sm hover:bg-slate-100">

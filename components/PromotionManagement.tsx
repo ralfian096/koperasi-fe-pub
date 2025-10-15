@@ -152,7 +152,7 @@ const PromotionManagement: React.FC<{ selectedBusinessUnit: BusinessUnit }> = ({
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <h2 className="text-3xl font-bold text-slate-800">Manajemen Promo</h2>
-                 <button onClick={handleAdd} className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 transition disabled:opacity-50 text-sm">
+                 <button onClick={handleAdd} className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg shadow-md hover:bg-primary-700 transition disabled:opacity-50 text-sm">
                     <PlusIcon className="w-5 h-5 mr-2"/>
                     Tambah Promo
                 </button>
@@ -196,7 +196,7 @@ const PromotionManagement: React.FC<{ selectedBusinessUnit: BusinessUnit }> = ({
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <button onClick={() => handleEdit(promo)} className="text-indigo-600 hover:text-indigo-900 mr-4"><EditIcon className="w-5 h-5"/></button>
+                                                <button onClick={() => handleEdit(promo)} className="text-primary-600 hover:text-primary-900 mr-4"><EditIcon className="w-5 h-5"/></button>
                                                 <button onClick={() => handleDelete(promo)} className="text-red-600 hover:text-red-900"><TrashIcon className="w-5 h-5"/></button>
                                             </td>
                                         </tr>

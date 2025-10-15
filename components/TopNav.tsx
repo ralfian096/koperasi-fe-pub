@@ -33,8 +33,8 @@ const NavItemDesktop: React.FC<{
         onClick={() => onClick(view)}
         className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
             current === view 
-                ? 'bg-indigo-900/50 text-white'
-                : 'text-indigo-200 hover:bg-indigo-700/50 hover:text-white'
+                ? 'bg-primary-900/50 text-white'
+                : 'text-primary-200 hover:bg-primary-700/50 hover:text-white'
         }`}
     >
         {label}
@@ -53,8 +53,8 @@ const NavItemMobile: React.FC<{
         onClick={() => onClick(view)}
         className={`flex flex-col items-center justify-center space-y-1 w-full pt-2 pb-1 transition-colors duration-200 ${
             isActive || current === view
-                ? 'text-indigo-600'
-                : 'text-slate-500 hover:text-indigo-600'
+                ? 'text-primary-600'
+                : 'text-slate-500 hover:text-primary-600'
         }`}
     >
         <Icon className="w-6 h-6" />
@@ -136,7 +136,7 @@ const TopNav: React.FC<TopNavProps> = ({ currentMainView, setMainView, setSelect
     return (
         <>
             {/* --- Desktop Navigation --- */}
-            <header className="bg-indigo-700 shadow-md z-20 hidden md:block">
+            <header className="bg-primary-700 shadow-md z-20 hidden md:block">
                 <div className="mx-auto max-w-screen-2xl px-4 sm:px-6 lg:px-8">
                     <div className="flex h-16 items-center justify-between">
                         <div className="flex items-center">
@@ -156,7 +156,7 @@ const TopNav: React.FC<TopNavProps> = ({ currentMainView, setMainView, setSelect
                             </nav>
                         </div>
                         <div className="relative" ref={dropdownRef}>
-                            <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="p-2 bg-indigo-800 text-indigo-200 rounded-full hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-indigo-800">
+                            <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="p-2 bg-primary-800 text-primary-200 rounded-full hover:text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-primary-800">
                                 <span className="font-semibold px-2">DF</span>
                             </button>
                             {isDropdownOpen && (

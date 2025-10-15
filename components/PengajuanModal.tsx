@@ -193,7 +193,7 @@ const PengajuanModal: React.FC<PengajuanModalProps> = ({ isOpen, onClose, onSave
                                 {isReadOnly ? (
                                     pengajuanToEdit?.file_path ? (
                                         <DetailViewText label="File Proposal" value={
-                                            <a href={`https://api.majukoperasiku.my.id/storage/${pengajuanToEdit.file_path}`} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800 font-medium">
+                                            <a href={`https://api.majukoperasiku.my.id/storage/${pengajuanToEdit.file_path}`} target="_blank" rel="noopener noreferrer" className="text-primary-600 hover:text-primary-800 font-medium">
                                                 Lihat file terlampir
                                             </a>
                                         } />
@@ -205,12 +205,12 @@ const PengajuanModal: React.FC<PengajuanModalProps> = ({ isOpen, onClose, onSave
                                         <label htmlFor="proposal-file-input" className="block text-sm font-medium text-slate-600">File Proposal (PDF, Word, Excel)</label>
                                         {isEditing && pengajuanToEdit?.file_path && (
                                             <div className="mt-1">
-                                                <a href={`https://api.majukoperasiku.my.id/storage/${pengajuanToEdit.file_path}`} target="_blank" rel="noopener noreferrer" className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                                                <a href={`https://api.majukoperasiku.my.id/storage/${pengajuanToEdit.file_path}`} target="_blank" rel="noopener noreferrer" className="text-sm text-primary-600 hover:text-primary-800 font-medium">
                                                     Lihat file terlampir saat ini
                                                 </a>
                                             </div>
                                         )}
-                                        <input id="proposal-file-input" type="file" onChange={handleFileChange} accept=".pdf,.doc,.docx,.xls,.xlsx" disabled={isSubmitting} className="input mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"/>
+                                        <input id="proposal-file-input" type="file" onChange={handleFileChange} accept=".pdf,.doc,.docx,.xls,.xlsx" disabled={isSubmitting} className="input mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"/>
                                         {proposalFile && <div className="mt-1 text-sm text-slate-600">File baru: {proposalFile.name}</div>}
                                         <p className="text-xs text-slate-500 mt-1">{isEditing && pengajuanToEdit?.file_path ? 'Mengunggah file baru akan menggantikan file yang ada.' : 'Opsional. Unggah file proposal jika ada.'}</p>
                                     </>
@@ -304,7 +304,7 @@ const PengajuanModal: React.FC<PengajuanModalProps> = ({ isOpen, onClose, onSave
                     </div>
                 </div>
             </div>
-             <style>{`.input { margin-top: 0.25rem; display: block; width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.375rem; transition: all 0.2s; } .input:disabled { background-color: #f1f5f9; cursor: not-allowed; } .btn-primary { padding: 0.5rem 1rem; background-color: #4f46e5; color: white; border-radius: 0.5rem; font-weight: 600; transition: background-color 0.2s; } .btn-primary:hover { background-color: #4338ca; } .btn-primary:disabled { background-color: #a5b4fc; cursor: not-allowed;} .btn-secondary { padding: 0.5rem 1rem; background-color: #e2e8f0; color: #1e293b; border-radius: 0.5rem; font-weight: 600; transition: background-color 0.2s; } .btn-secondary:hover { background-color: #cbd5e1; } .btn-secondary:disabled { background-color: #f1f5f9; cursor: not-allowed;}`}</style>
+             <style>{`.input { margin-top: 0.25rem; display: block; width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.375rem; transition: all 0.2s; } .input:disabled { background-color: #f1f5f9; cursor: not-allowed; } .btn-primary { padding: 0.5rem 1rem; background-color: #e7000b; color: white; border-radius: 0.5rem; font-weight: 600; transition: background-color 0.2s; } .btn-primary:hover { background-color: #b91c1c; } .btn-primary:disabled { background-color: #fca5a5; cursor: not-allowed;} .btn-secondary { padding: 0.5rem 1rem; background-color: #e2e8f0; color: #1e293b; border-radius: 0.5rem; font-weight: 600; transition: background-color 0.2s; } .btn-secondary:hover { background-color: #cbd5e1; } .btn-secondary:disabled { background-color: #f1f5f9; cursor: not-allowed;}`}</style>
         </div>
     );
 };

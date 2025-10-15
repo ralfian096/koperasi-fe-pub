@@ -214,7 +214,7 @@ const BusinessUnitModal: React.FC<{
                             fallbackClassName="w-12 h-12 text-slate-400"
                         />
                     </div>
-                    <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
+                    <label htmlFor="file-upload" className="relative cursor-pointer bg-white rounded-md font-medium text-primary-600 hover:text-primary-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-indigo-500">
                         <span>Unggah file</span>
                         <input id="file-upload" name="file-upload" type="file" className="sr-only" onChange={handleFileChange} accept="image/*" disabled={isUploading} />
                     </label>
@@ -222,40 +222,40 @@ const BusinessUnitModal: React.FC<{
             </div>
             <div>
                 <label htmlFor="name" className="block text-sm font-medium text-slate-600">Nama Unit Usaha *</label>
-                <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" disabled={isUploading}/>
+                <input type="text" name="name" id="name" value={formData.name} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" disabled={isUploading}/>
             </div>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label htmlFor="email" className="block text-sm font-medium text-slate-600">Email</label>
-                    <input type="email" name="email" id="email" value={formData.email || ''} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" disabled={isUploading}/>
+                    <input type="email" name="email" id="email" value={formData.email || ''} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" disabled={isUploading}/>
                 </div>
                 <div>
                     <label htmlFor="contact" className="block text-sm font-medium text-slate-600">Kontak (No. HP)</label>
-                    <input type="tel" name="contact" id="contact" value={formData.contact || ''} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" disabled={isUploading}/>
+                    <input type="tel" name="contact" id="contact" value={formData.contact || ''} onChange={handleChange} className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" disabled={isUploading}/>
                 </div>
             </div>
              <div>
                 <label htmlFor="description" className="block text-sm font-medium text-slate-600">Deskripsi</label>
-                <textarea name="description" id="description" value={formData.description || ''} onChange={handleChange} rows={3} className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" disabled={isUploading}/>
+                <textarea name="description" id="description" value={formData.description || ''} onChange={handleChange} rows={3} className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" disabled={isUploading}/>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <div>
                     <label htmlFor="website" className="block text-sm font-medium text-slate-600">Website</label>
-                    <input type="url" name="website" id="website" value={formData.website || ''} onChange={handleChange} placeholder="https://contoh.com" className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" disabled={isUploading}/>
+                    <input type="url" name="website" id="website" value={formData.website || ''} onChange={handleChange} placeholder="https://contoh.com" className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" disabled={isUploading}/>
                 </div>
                  <div>
                     <label htmlFor="instagram" className="block text-sm font-medium text-slate-600">Instagram</label>
-                    <input type="text" name="instagram" id="instagram" value={formData.instagram || ''} onChange={handleChange} placeholder="@username" className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" disabled={isUploading}/>
+                    <input type="text" name="instagram" id="instagram" value={formData.instagram || ''} onChange={handleChange} placeholder="@username" className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" disabled={isUploading}/>
                 </div>
             </div>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label htmlFor="tiktok" className="block text-sm font-medium text-slate-600">TikTok</label>
-                    <input type="text" name="tiktok" id="tiktok" value={formData.tiktok || ''} onChange={handleChange} placeholder="@username" className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" disabled={isUploading}/>
+                    <input type="text" name="tiktok" id="tiktok" value={formData.tiktok || ''} onChange={handleChange} placeholder="@username" className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" disabled={isUploading}/>
                 </div>
                  <div>
                     <label htmlFor="is_active" className="block text-sm font-medium text-slate-600">Status</label>
-                    <select name="is_active" id="is_active" value={formData.is_active} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500" disabled={isUploading}>
+                    <select name="is_active" id="is_active" value={formData.is_active} onChange={handleChange} required className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" disabled={isUploading}>
                         <option value="1">Aktif</option>
                         <option value="0">Tidak Aktif</option>
                     </select>
@@ -268,13 +268,13 @@ const BusinessUnitModal: React.FC<{
                         <span className="text-sm font-medium text-slate-700">{uploadProgress}%</span>
                     </div>
                     <div className="w-full bg-slate-200 rounded-full h-2.5">
-                        <div className="bg-indigo-600 h-2.5 rounded-full transition-all duration-150" style={{ width: `${uploadProgress}%` }}></div>
+                        <div className="bg-primary-600 h-2.5 rounded-full transition-all duration-150" style={{ width: `${uploadProgress}%` }}></div>
                     </div>
                 </div>
             )}
           <div className="mt-8 flex justify-end space-x-3">
             <button type="button" onClick={onClose} className="px-4 py-2 bg-slate-200 text-slate-800 rounded-md hover:bg-slate-300 disabled:opacity-50 disabled:cursor-not-allowed" disabled={isUploading}>Batal</button>
-            <button type="submit" className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-wait w-28 text-center" disabled={isUploading}>
+            <button type="submit" className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-wait w-28 text-center" disabled={isUploading}>
               {isUploading ? 'Mengunggah...' : 'Simpan'}
             </button>
           </div>

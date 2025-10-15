@@ -172,7 +172,7 @@ const Pengajuan: React.FC = () => {
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value as any)}
-                        className="h-10 px-3 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="h-10 px-3 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
                     >
                         <option value="all">Semua Status</option>
                         <option value="DRAFT">Draft</option>
@@ -180,7 +180,7 @@ const Pengajuan: React.FC = () => {
                         <option value="APPROVED">Diterima</option>
                         <option value="REJECTED">Ditolak</option>
                     </select>
-                    <button onClick={() => handleOpenModal(null, 'add')} className="flex items-center h-10 px-4 bg-indigo-600 text-white rounded-lg font-semibold text-sm shadow-md hover:bg-indigo-700 transition">
+                    <button onClick={() => handleOpenModal(null, 'add')} className="flex items-center h-10 px-4 bg-primary-600 text-white rounded-lg font-semibold text-sm shadow-md hover:bg-primary-700 transition">
                         <PlusIcon className="w-5 h-5 mr-2"/>
                         Buat Pengajuan
                     </button>
@@ -219,7 +219,7 @@ const Pengajuan: React.FC = () => {
                                                             target="_blank" 
                                                             rel="noopener noreferrer" 
                                                             title="Lihat Proposal Terlampir"
-                                                            className="text-indigo-500 hover:text-indigo-700 flex-shrink-0"
+                                                            className="text-primary-500 hover:text-primary-700 flex-shrink-0"
                                                         >
                                                             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                                               <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
@@ -251,11 +251,11 @@ const Pengajuan: React.FC = () => {
                                                     </>
                                                 )}
                                                 {canEdit ? (
-                                                    <button onClick={() => handleOpenModal(p, 'edit')} title="Ubah Pengajuan" className="text-indigo-600 hover:text-indigo-900 p-1 inline-block">
+                                                    <button onClick={() => handleOpenModal(p, 'edit')} title="Ubah Pengajuan" className="text-primary-600 hover:text-primary-900 p-1 inline-block">
                                                         <EditIcon className="w-5 h-5" />
                                                     </button>
                                                 ) : (
-                                                    <button onClick={() => handleOpenModal(p, 'view')} title="Lihat Detail" className="text-indigo-600 hover:text-indigo-900 p-1 inline-block">
+                                                    <button onClick={() => handleOpenModal(p, 'view')} title="Lihat Detail" className="text-primary-600 hover:text-primary-900 p-1 inline-block">
                                                         <EyeIcon className="w-5 h-5" />
                                                     </button>
                                                 )}

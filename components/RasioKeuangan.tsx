@@ -15,7 +15,7 @@ const RatioCard: React.FC<{ ratio: FinancialRatioDetail }> = ({ ratio }) => {
         <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 flex flex-col">
             <div className="flex justify-between items-start">
                 <h5 className="font-semibold text-slate-700 max-w-[70%]">{ratio.name}</h5>
-                <p className="text-2xl font-bold text-indigo-600">{displayValue}</p>
+                <p className="text-2xl font-bold text-primary-600">{displayValue}</p>
             </div>
             <p className="text-sm text-slate-500 mt-2 flex-grow">{ratio.interpretation}</p>
             <details className="mt-3 text-xs">
@@ -167,7 +167,7 @@ const RasioKeuangan: React.FC<{ selectedBusinessUnit: BusinessUnit }> = ({ selec
                     </div>
                 )}
             </div>
-             <style>{`.input { margin-top: 0.25rem; display: block; width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.375rem; } .btn-primary { padding: 0.5rem 1rem; background-color: #4f46e5; color: white; border-radius: 0.5rem; font-weight: 600; transition: background-color 0.2s; } .btn-primary:hover { background-color: #4338ca; } .btn-primary:disabled { background-color: #a5b4fc; cursor: not-allowed;} `}</style>
+             <style>{`.input { margin-top: 0.25rem; display: block; width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.375rem; } .btn-primary { padding: 0.5rem 1rem; background-color: #e7000b; color: white; border-radius: 0.5rem; font-weight: 600; transition: background-color 0.2s; } .btn-primary:hover { background-color: #b91c1c; } .btn-primary:disabled { background-color: #fca5a5; cursor: not-allowed;} `}</style>
         </div>
     );
 };

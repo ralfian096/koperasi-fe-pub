@@ -364,7 +364,7 @@ const ProductModal: React.FC<{
                                             type="checkbox"
                                             checked={formState.outlet_ids.includes(outlet.id)}
                                             onChange={() => handleOutletSelectionChange(outlet.id)}
-                                            className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                            className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                                         />
                                         <span className="text-sm text-slate-700">{outlet.name}</span>
                                     </label>
@@ -612,7 +612,7 @@ const ProductManagement: React.FC<ProductManagementProps> = ({ selectedBusinessU
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{baseProduct.category?.name || 'N/A'}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{outletDisplay}</td>
                                             <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                                <button onClick={() => handleOpenModal(baseProduct)} className="text-indigo-600 hover:text-indigo-900 mr-4"><EditIcon className="w-5 h-5"/></button>
+                                                <button onClick={() => handleOpenModal(baseProduct)} className="text-primary-600 hover:text-primary-900 mr-4"><EditIcon className="w-5 h-5"/></button>
                                                 <button onClick={() => handleDelete(baseProduct)} className="text-red-600 hover:text-red-900"><TrashIcon className="w-5 h-5"/></button>
                                             </td>
                                         </tr>

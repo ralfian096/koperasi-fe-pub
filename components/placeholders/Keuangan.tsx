@@ -125,7 +125,7 @@ const JurnalUmum: React.FC = () => {
                                             <td className="px-6 py-3 align-top" colSpan={3}>
                                                 <div className="font-semibold text-slate-800">{new Date(journal.entry_date).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}</div>
                                                 <div className="text-sm text-slate-600">{journal.description}</div>
-                                                <div className="text-xs font-medium text-indigo-600 mt-1">{journal.business?.name || 'Konsolidasi'}</div>
+                                                <div className="text-xs font-medium text-primary-600 mt-1">{journal.business?.name || 'Konsolidasi'}</div>
                                             </td>
                                         </tr>
                                         {journal.details.map((detail: any) => (
@@ -193,7 +193,7 @@ const LaporanPHU: React.FC = () => {
                                 {reportData.expenses.accounts.map(acc => (<div key={acc.account_code} className="flex justify-between py-1.5"><p className="text-slate-600 pl-8">{acc.account_name}</p><p className="text-red-600">{formatValue(acc.total, true)}</p></div>))}
                                 <div className="flex justify-between pt-2 border-t border-slate-300 mt-2"><p className="font-semibold text-slate-800 pl-8">Total Beban</p><p className="font-semibold text-red-600">{formatValue(reportData.expenses.total, true)}</p></div>
                             </div>
-                             <div className="bg-indigo-600 text-white p-3 rounded-md mt-6 flex justify-between items-center text-base">
+                             <div className="bg-primary-600 text-white p-3 rounded-md mt-6 flex justify-between items-center text-base">
                                 <p className="font-bold">Sisa Hasil Usaha (SHU)</p><p className="font-bold text-lg">{formatCurrency(reportData.net_profit)}</p>
                              </div>
                         </div>
@@ -298,7 +298,7 @@ const RasioKeuangan: React.FC = () => {
         return (
             <div className="bg-slate-50 p-4 rounded-lg border border-slate-200 flex flex-col">
                 <div className="flex justify-between items-start">
-                    <h5 className="font-semibold text-slate-700 max-w-[70%]">{ratio.name}</h5><p className="text-2xl font-bold text-indigo-600">{displayValue}</p>
+                    <h5 className="font-semibold text-slate-700 max-w-[70%]">{ratio.name}</h5><p className="text-2xl font-bold text-primary-600">{displayValue}</p>
                 </div>
                 <p className="text-sm text-slate-500 mt-2 flex-grow">{ratio.interpretation}</p>
                 <details className="mt-3 text-xs"><summary className="cursor-pointer text-slate-500 hover:text-slate-700">Lihat Detail</summary>
@@ -360,7 +360,7 @@ const Keuangan: React.FC<{ subView: SubView | null }> = ({ subView }) => {
     return (
         <div className="space-y-8">
             {renderContent()}
-            <style>{`.input { margin-top: 0.25rem; display: block; width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.375rem; } .btn-primary { padding: 0.5rem 1rem; background-color: #4f46e5; color: white; border-radius: 0.5rem; font-weight: 600; transition: background-color 0.2s; } .btn-primary:hover { background-color: #4338ca; } .btn-primary:disabled { background-color: #a5b4fc; cursor: not-allowed;} `}</style>
+            <style>{`.input { margin-top: 0.25rem; display: block; width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.375rem; } .btn-primary { padding: 0.5rem 1rem; background-color: #e7000b; color: white; border-radius: 0.5rem; font-weight: 600; transition: background-color 0.2s; } .btn-primary:hover { background-color: #b91c1c; } .btn-primary:disabled { background-color: #fca5a5; cursor: not-allowed;} `}</style>
         </div>
     );
 };

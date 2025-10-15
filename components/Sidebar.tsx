@@ -38,8 +38,8 @@ const NavLink: React.FC<{
             onClick={() => setCurrentView(view)}
             className={`w-full flex items-center gap-3 ${isSubItem ? 'pl-11 pr-4' : 'px-4'} py-3 my-1 text-left rounded-lg transition-colors duration-200 ease-in-out text-sm ${
                 currentView === view
-                    ? 'bg-indigo-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:bg-indigo-50 hover:text-indigo-700'
+                    ? 'bg-primary-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:bg-primary-50 hover:text-primary-700'
             }`}
         >
             <Icon className="w-5 h-5 flex-shrink-0" />
@@ -66,7 +66,7 @@ const CollapsibleNavGroup: React.FC<{
         <div>
             <button
                 onClick={handleClick}
-                className="w-full flex items-center justify-between px-4 py-3 my-1 text-left rounded-lg transition-colors duration-200 ease-in-out text-sm text-slate-600 hover:bg-indigo-50 hover:text-indigo-700"
+                className="w-full flex items-center justify-between px-4 py-3 my-1 text-left rounded-lg transition-colors duration-200 ease-in-out text-sm text-slate-600 hover:bg-primary-50 hover:text-primary-700"
             >
                 <div className="flex items-center gap-3">
                     <Icon className="w-5 h-5" />

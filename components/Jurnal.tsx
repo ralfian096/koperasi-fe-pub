@@ -122,7 +122,7 @@ const Jurnal: React.FC<JurnalProps> = ({ selectedBusinessUnit }) => {
                  <h2 className="text-3xl font-bold text-slate-800">Jurnal Umum</h2>
             </div>
             <div className="flex justify-end">
-                <button onClick={() => handleOpenModal()} className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg shadow-md hover:bg-indigo-700 transition">
+                <button onClick={() => handleOpenModal()} className="flex items-center px-4 py-2 bg-primary-600 text-white rounded-lg shadow-md hover:bg-primary-700 transition">
                     <PlusIcon className="w-5 h-5 mr-2"/>
                     Tambah Jurnal
                 </button>

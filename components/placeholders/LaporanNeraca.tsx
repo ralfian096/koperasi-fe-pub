@@ -9,9 +9,9 @@ const LaporanNeraca: React.FC = () => {
                 Fitur untuk melihat laporan neraca keuangan (balance sheet) akan tersedia di sini.
                 Laporan ini akan menampilkan ringkasan aset, kewajiban, dan ekuitas perusahaan pada periode tertentu.
             </p>
-            <div className="mt-6 p-4 border-l-4 border-indigo-500 bg-indigo-50">
-                <p className="font-semibold text-indigo-800">Fitur yang Direncanakan:</p>
-                <ul className="list-disc list-inside text-indigo-700 mt-2">
+            <div className="mt-6 p-4 border-l-4 border-primary-500 bg-primary-50">
+                <p className="font-semibold text-primary-800">Fitur yang Direncanakan:</p>
+                <ul className="list-disc list-inside text-primary-700 mt-2">
                     <li>Tampilan Aset (Lancar & Tetap)</li>
                     <li>Tampilan Kewajiban dan Ekuitas</li>
                     <li>Filter Berdasarkan Periode</li>

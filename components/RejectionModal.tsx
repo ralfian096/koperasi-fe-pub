@@ -42,7 +42,7 @@ const RejectionModal: React.FC<RejectionModalProps> = ({ isOpen, onClose, onSubm
               onChange={(e) => setReason(e.target.value)}
               placeholder="Tulis alasan di sini..."
               disabled={isSubmitting}
-              className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
             />
           </div>
         </div>
