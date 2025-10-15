@@ -11,7 +11,8 @@ This is a comprehensive Point of Sale (POS) back office management system built 
 ### Frontend Stack
 - **Framework:** React 19.1.1 with TypeScript
 - **Build Tool:** Vite 6.2.0
-- **Styling:** TailwindCSS (via CDN)
+- **Styling:** TailwindCSS v4.1.14 (via npm with @tailwindcss/postcss)
+- **Color Theme:** Custom primary color #e7000b (red)
 - **Charts:** Recharts 3.1.2
 - **Module System:** ES Modules with import maps
 
@@ -103,6 +104,13 @@ The project is configured for Replit Autoscale deployment:
 None documented yet.
 
 ## Recent Changes
+- **October 15, 2025**: Custom color theme implementation
+  - Migrated from Tailwind CSS CDN to npm-based Tailwind v4.1.14
+  - Implemented custom primary color palette with #e7000b as brand color
+  - Replaced all indigo colors with primary red across all components
+  - Updated navigation (TopNav, Sidebar), buttons, and UI elements with new color scheme
+  - Configured @tailwindcss/postcss for proper Tailwind v4 support
+  
 - **October 6, 2025**: Initial import and Replit configuration
   - Updated Vite config to use port 5000 with proper HMR settings
   - Configured deployment for Autoscale
@@ -121,8 +129,14 @@ The application uses React Context for notifications and localStorage for:
 - Selected business unit
 
 ### External Dependencies
-- **Tailwind CSS**: Loaded via CDN (https://cdn.tailwindcss.com)
+- **Tailwind CSS**: npm package v4.1.14 with @tailwindcss/postcss
 - **React & Dependencies**: Loaded via AI Studio CDN (aistudiocdn.com)
+
+### Custom Theming
+The application uses a custom color palette with #e7000b as the primary brand color:
+- Primary 50-950: Complete color scale from lightest to darkest
+- Applied consistently across navigation, buttons, links, and interactive elements
+- Semantic colors (green for success, yellow for warnings, red for errors) remain unchanged
 
 ### API Endpoints
 The application communicates with the following main endpoints:
